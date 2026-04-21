@@ -12,13 +12,18 @@
     group: root
     mode: "0755"
 
+- name: Stat shipped registries.conf
+  ansible.builtin.stat:
+    path: /etc/containers/registries.conf
+  register: registries_shipped
+
 - name: Back up shipped registries.conf (first run only)
   ansible.builtin.copy:
     src: /etc/containers/registries.conf
     dest: /etc/containers/registries.conf.orig
     remote_src: true
     force: false
-  ignore_errors: true
+  when: registries_shipped.stat.exists
 
 - name: Render registries.conf
   ansible.builtin.template:
@@ -46,13 +51,18 @@
     mode: "0644"
   when: podman_registry_ca_cert | length > 0
 
+- name: Stat shipped storage.conf
+  ansible.builtin.stat:
+    path: /etc/containers/storage.conf
+  register: storage_shipped
+
 - name: Back up shipped storage.conf (first run only)
   ansible.builtin.copy:
     src: /etc/containers/storage.conf
     dest: /etc/containers/storage.conf.orig
     remote_src: true
     force: false
-  ignore_errors: true
+  when: storage_shipped.stat.exists
 
 - name: Render storage.conf
   ansible.builtin.template:
@@ -62,13 +72,18 @@
     group: root
     mode: "0644"
 
+- name: Stat shipped containers.conf
+  ansible.builtin.stat:
+    path: /etc/containers/containers.conf
+  register: containers_shipped
+
 - name: Back up shipped containers.conf (first run only)
   ansible.builtin.copy:
     src: /etc/containers/containers.conf
     dest: /etc/containers/containers.conf.orig
     remote_src: true
     force: false
-  ignore_errors: true
+  when: containers_shipped.stat.exists
 
 - name: Render containers.conf
   ansible.builtin.template:
@@ -84,7 +99,10 @@
     enabled: false
     masked: true
     state: stopped
-  ignore_errors: true
+  register: podman_socket_mask
+  failed_when:
+    - podman_socket_mask.failed
+    - "'Could not find the requested service' not in (podman_socket_mask.msg | default(''))"
 
 - name: Smoke test podman config
   ansible.builtin.command: podman info
