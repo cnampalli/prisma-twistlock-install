@@ -1,6 +1,11 @@
 ---
 # site.yml runs Phases 2–8 in one pass. Phase 9 (./twistlock.sh) is manual; run
 # 30-prisma-ops.yml afterwards to apply Phase 10.
-- import_playbook: 00-baseline.yml
-- import_playbook: 10-podman.yml
-- import_playbook: 20-prisma-stage.yml
+- name: Phase 2 - RHEL baseline + FIPS
+  import_playbook: 00-baseline.yml
+
+- name: Phase 3 - Podman rootful runtime
+  import_playbook: 10-podman.yml
+
+- name: Phases 4-8 - Stage, TLS, config, install, systemd
+  import_playbook: 20-prisma-stage.yml
