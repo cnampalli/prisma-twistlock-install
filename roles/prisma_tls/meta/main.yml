@@ -3,6 +3,7 @@
 # openssl_privatekey_info). Pinned in requirements.yml.
 galaxy_info:
   role_name: prisma_tls
+  author: Chaitanya Nampalli
   description: Stage internal-CA-issued TLS material for Prisma Console
   license: internal
   min_ansible_version: "2.15"

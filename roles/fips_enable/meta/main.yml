@@ -2,6 +2,7 @@
 # Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: fips_enable
+  author: Chaitanya Nampalli
   description: Enable RHEL 8 FIPS 140-2 mode; reboot; assert state
   license: internal
   min_ansible_version: "2.15"

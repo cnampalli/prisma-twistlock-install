@@ -2,6 +2,7 @@
 # Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: prisma_backup
+  author: Chaitanya Nampalli
   description: Nightly Prisma Console backup — script, systemd service, timer
   license: internal
   min_ansible_version: "2.15"

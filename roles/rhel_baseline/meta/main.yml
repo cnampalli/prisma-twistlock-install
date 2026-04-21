@@ -2,6 +2,7 @@
 # Requires collections: ansible.posix (selinux, firewalld). Pinned in requirements.yml.
 galaxy_info:
   role_name: rhel_baseline
+  author: Chaitanya Nampalli
   description: RHEL 8.10 baseline — packages, SELinux enforce, firewalld, chrony, sshd, sysctl, journald caps
   license: internal
   min_ansible_version: "2.15"

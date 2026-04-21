@@ -2,6 +2,7 @@
 # Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: prisma_systemd
+  author: Chaitanya Nampalli
   description: systemd drop-in for the Prisma Console service (restart, cgroup accounting)
   license: internal
   min_ansible_version: "2.15"

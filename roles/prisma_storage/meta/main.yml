@@ -3,6 +3,7 @@
 # Pinned in requirements.yml.
 galaxy_info:
   role_name: prisma_storage
+  author: Chaitanya Nampalli
   description: LVM + XFS data volume for Prisma Console, SELinux labelled for container bind-mount
   license: internal
   min_ansible_version: "2.15"

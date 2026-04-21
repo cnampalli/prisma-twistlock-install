@@ -2,6 +2,7 @@
 # Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: prisma_logrotate
+  author: Chaitanya Nampalli
   description: logrotate policy for Prisma Console application logs
   license: internal
   min_ansible_version: "2.15"
