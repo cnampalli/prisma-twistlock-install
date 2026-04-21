@@ -19,7 +19,7 @@ out="{{ prisma_backup_dir }}/prisma-${ts}.tar.gz"
 curl -s {{ curl_tls }} --fail \
   -u "${PRISMA_BACKUP_USER}:${PRISMA_BACKUP_TOKEN}" \
   -o "${out}" \
-  "https://localhost:{{ prisma_https_port }}/api/v1/backups"
+  "https://{{ prisma_console_fqdn | default('localhost') }}:{{ prisma_https_port }}/api/v1/backups"
 
 curl -s {{ curl_tls }} --fail \
   -T "${out}" \
