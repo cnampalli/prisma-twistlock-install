@@ -25,7 +25,11 @@
     owner: root
     group: root
     mode: "0600"
-    backup: true
+    # backup:false on purpose — this file contains PRISMA_BACKUP_TOKEN in
+    # plaintext, and backup:true would accumulate timestamped .bak copies
+    # under /etc/prisma with the same mode, quietly spreading token
+    # exposure across rotating historical files that no one audits.
+    backup: false
   no_log: true
 
 - name: Install systemd service
