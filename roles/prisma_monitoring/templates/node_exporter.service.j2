@@ -1,0 +1,21 @@
+[Unit]
+Description=Prometheus node_exporter
+After=network-online.target
+
+[Service]
+User={{ node_exporter_user }}
+Group={{ node_exporter_user }}
+ExecStart={{ node_exporter_bin }} \
+  --web.listen-address=:{{ node_exporter_port }} \
+  --collector.systemd \
+  --collector.processes \
+  --collector.filesystem.mount-points-exclude='^/(dev|proc|sys|run|var/lib/containers/storage/overlay)($|/)'
+Restart=on-failure
+RestartSec=10s
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

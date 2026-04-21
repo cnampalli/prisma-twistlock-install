@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: prisma_backup
+  description: Nightly Prisma Console backup — script, systemd service, timer
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

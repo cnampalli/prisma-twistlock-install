@@ -1,0 +1,15 @@
+# Managed by Ansible — prisma-twistlock-install / podman_config
+
+[containers]
+log_driver = "journald"
+log_size_max = {{ podman_log_size_max }}
+pids_limit = {{ podman_pids_limit }}
+default_ulimits = [
+  "nofile={{ podman_nofile }}",
+  "nproc={{ podman_nproc }}",
+]
+
+[engine]
+cgroup_manager = "{{ podman_cgroup_manager }}"
+events_logger = "journald"
+runtime = "{{ podman_runtime }}"

@@ -1,0 +1,12 @@
+module(load="imfile" PollingInterval="10")
+
+input(type="imfile"
+      File="{{ prisma_data_folder }}/log/*.log"
+      Tag="prisma-console:"
+      Severity="info"
+      Facility="local6"
+      ReadMode="2"
+      PersistStateInterval="200")
+
+# Ship to internal SIEM over TCP
+local6.* @@{{ siem_server }}:{{ siem_port }}

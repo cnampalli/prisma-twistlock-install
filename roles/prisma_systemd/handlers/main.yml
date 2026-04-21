@@ -1,0 +1,9 @@
+---
+- name: Daemon reload
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Restart twistlock
+  ansible.builtin.systemd:
+    name: "{{ prisma_systemd_unit }}"
+    state: restarted

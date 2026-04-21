@@ -1,0 +1,13 @@
+---
+# Molecule converge — runs Phases 2–8. The lab sandbox does not have a real
+# Prisma tarball or CA, so prisma_stage / prisma_tls / prisma_config are skipped
+# here; they are covered by a separate `full` scenario with mock artefacts.
+- name: Converge — baseline + podman on lab VM
+  hosts: all
+  gather_facts: true
+  become: true
+  roles:
+    - role: rhel_baseline
+    - role: fips_enable
+    - role: prisma_storage
+    - role: podman_config

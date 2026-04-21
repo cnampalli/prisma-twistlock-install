@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Prisma Console backup nightly
+
+[Timer]
+OnCalendar={{ prisma_backup_schedule }}
+Persistent=true
+RandomizedDelaySec={{ prisma_backup_jitter_sec }}
+
+[Install]
+WantedBy=timers.target

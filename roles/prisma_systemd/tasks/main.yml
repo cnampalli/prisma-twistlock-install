@@ -1,0 +1,40 @@
+---
+- name: Check twistlock.service is present (installer must have run)
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/{{ prisma_systemd_unit }}.service"
+  register: svc
+
+- name: Warn if unit is missing
+  ansible.builtin.debug:
+    msg: |
+      /etc/systemd/system/{{ prisma_systemd_unit }}.service not present.
+      Run runbook Phase 9 (./twistlock.sh -s console) before prisma_systemd.
+  when: not svc.stat.exists
+
+- name: Ensure drop-in directory
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ prisma_systemd_unit }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: svc.stat.exists
+
+- name: Drop-in override
+  ansible.builtin.template:
+    src: override.conf.j2
+    dest: "/etc/systemd/system/{{ prisma_systemd_unit }}.service.d/override.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Daemon reload
+    - Restart twistlock
+  when: svc.stat.exists
+
+- name: Enable and start
+  ansible.builtin.systemd:
+    name: "{{ prisma_systemd_unit }}"
+    enabled: true
+    state: started
+  when: svc.stat.exists

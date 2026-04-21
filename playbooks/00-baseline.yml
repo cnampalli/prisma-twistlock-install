@@ -1,0 +1,12 @@
+---
+- name: Phases 2-4 — host baseline, FIPS, storage
+  hosts: prisma_console
+  gather_facts: true
+  become: true
+  roles:
+    - role: rhel_baseline
+      tags: [baseline]
+    - role: fips_enable
+      tags: [fips]
+    - role: prisma_storage
+      tags: [storage]

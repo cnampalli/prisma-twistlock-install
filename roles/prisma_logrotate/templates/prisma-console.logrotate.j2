@@ -1,0 +1,13 @@
+{{ prisma_data_folder }}/log/*.log {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    dateext
+    dateformat -%Y%m%d
+    create 0640 root root
+    sharedscripts
+}

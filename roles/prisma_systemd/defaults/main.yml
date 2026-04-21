@@ -1,0 +1,4 @@
+---
+prisma_systemd_unit: "twistlock"
+prisma_systemd_tasks_max: 8192
+prisma_systemd_restart_sec: 10

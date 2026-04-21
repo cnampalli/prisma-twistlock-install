@@ -1,0 +1,22 @@
+---
+- name: Phases 6-8 — TLS, installer staging, twistlock.cfg
+  hosts: prisma_console
+  gather_facts: true
+  become: true
+  roles:
+    - role: prisma_tls
+      tags: [tls]
+    - role: prisma_stage
+      tags: [stage]
+    - role: prisma_config
+      tags: [config]
+
+  post_tasks:
+    - name: Remind operator to run Phase 9 manually
+      ansible.builtin.debug:
+        msg: |
+          Phase 9 ([M]) — run the installer manually on the host:
+              cd {{ prisma_extracted_dir }}
+              ./twistlock.sh -s console | tee /root/twistlock-install.log
+          Re-run playbooks/30-prisma-ops.yml once the installer has created
+          /etc/systemd/system/twistlock.service.

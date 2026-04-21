@@ -1,0 +1,23 @@
+# Operator-supplied artefacts — NEVER commit
+files/*.tar.gz
+files/*.tar.gz.sha256
+files/*.crt
+files/*.key
+files/*.pem
+
+# Secrets
+*.vault
+vault_pass*
+*.env
+
+# Ansible transient
+*.retry
+.ansible/
+.cache/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store

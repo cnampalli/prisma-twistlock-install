@@ -1,0 +1,14 @@
+---
+- name: Install logrotate policy
+  ansible.builtin.template:
+    src: prisma-console.logrotate.j2
+    dest: /etc/logrotate.d/prisma-console
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Dry-run logrotate to verify syntax
+  ansible.builtin.command: "logrotate -d /etc/logrotate.d/prisma-console"
+  register: lr_debug
+  changed_when: false
+  failed_when: lr_debug.rc != 0

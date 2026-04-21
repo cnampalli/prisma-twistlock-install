@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: prisma_systemd
+  description: systemd drop-in for the Prisma Console service (restart, cgroup accounting)
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

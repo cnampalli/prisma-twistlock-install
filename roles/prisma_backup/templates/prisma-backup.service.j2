@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly Prisma Console backup
+After=network-online.target twistlock.service
+Requires=twistlock.service
+
+[Service]
+Type=oneshot
+EnvironmentFile={{ prisma_backup_env_file }}
+ExecStart={{ prisma_backup_script }}
+User=root

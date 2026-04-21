@@ -1,0 +1,8 @@
+---
+- name: Phase 5 — podman configuration
+  hosts: prisma_console
+  gather_facts: true
+  become: true
+  roles:
+    - role: podman_config
+      tags: [podman]

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${PRISMA_BACKUP_USER:?missing in env}"
+: "${PRISMA_BACKUP_TOKEN:?missing in env}"
+: "${INTERNAL_BACKUP_URL:?missing in env}"
+
+ts=$(date -u +%Y%m%dT%H%M%SZ)
+out="{{ prisma_backup_dir }}/prisma-${ts}.tar.gz"
+
+curl -ks --fail \
+  -u "${PRISMA_BACKUP_USER}:${PRISMA_BACKUP_TOKEN}" \
+  -o "${out}" \
+  "https://localhost:{{ prisma_https_port }}/api/v1/backups"
+
+curl -ks --fail \
+  -T "${out}" \
+  "${INTERNAL_BACKUP_URL}/$(basename "${out}")"
+
+find "{{ prisma_backup_dir }}" -type f -mtime +{{ prisma_backup_retention_days }} -delete

@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  role_name: rhel_baseline
+  description: RHEL 8.10 baseline — packages, SELinux enforce, firewalld, chrony, sshd, sysctl, journald caps
+  license: internal
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions: ["8"]
+dependencies: []

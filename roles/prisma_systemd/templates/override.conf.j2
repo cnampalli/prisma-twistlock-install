@@ -1,0 +1,9 @@
+[Service]
+Restart=on-failure
+RestartSec={{ prisma_systemd_restart_sec }}s
+StandardOutput=journal
+StandardError=journal
+CPUAccounting=yes
+MemoryAccounting=yes
+IOAccounting=yes
+TasksMax={{ prisma_systemd_tasks_max }}

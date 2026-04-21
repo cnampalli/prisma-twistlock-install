@@ -1,0 +1,48 @@
+---
+- name: Ensure PKI dir
+  ansible.builtin.file:
+    path: "{{ prisma_pki_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Stage TLS materials
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: "{{ prisma_cert_src }}",      dest: "{{ prisma_cert_path }}",     mode: "0600" }
+    - { src: "{{ prisma_key_src }}",       dest: "{{ prisma_cert_key_path }}", mode: "0600" }
+    - { src: "{{ prisma_ca_chain_src }}",  dest: "{{ prisma_cert_ca_path }}",  mode: "0644" }
+  no_log: false
+
+- name: Restore SELinux context on PKI dir
+  ansible.builtin.command: "restorecon -R {{ prisma_pki_dir }}"
+  changed_when: false
+
+- name: Verify cert / key modulus match
+  block:
+    - name: Cert modulus
+      ansible.builtin.shell: "openssl x509 -noout -modulus -in {{ prisma_cert_path }} | openssl sha256 | awk '{print $2}'"
+      register: cert_mod
+      changed_when: false
+
+    - name: Key modulus
+      ansible.builtin.shell: "openssl rsa -noout -modulus -in {{ prisma_cert_key_path }} | openssl sha256 | awk '{print $2}'"
+      register: key_mod
+      changed_when: false
+
+    - name: Assert modulus match
+      ansible.builtin.assert:
+        that: cert_mod.stdout == key_mod.stdout
+        fail_msg: "TLS cert and key do not match (cert={{ cert_mod.stdout }} key={{ key_mod.stdout }})"
+
+- name: Verify cert chains to supplied CA
+  ansible.builtin.command: "openssl verify -CAfile {{ prisma_cert_ca_path }} {{ prisma_cert_path }}"
+  register: cert_verify
+  changed_when: false
+  failed_when: "'OK' not in cert_verify.stdout"

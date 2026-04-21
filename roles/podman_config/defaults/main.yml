@@ -1,0 +1,14 @@
+---
+podman_internal_registry: "registry.internal"
+podman_blocked_registries:
+  - docker.io
+  - quay.io
+  - registry.redhat.io
+  - registry.access.redhat.com
+
+podman_log_size_max: 104857600
+podman_pids_limit: 4096
+podman_nofile: "65535:65535"
+podman_nproc: "4096:4096"
+podman_cgroup_manager: "systemd"
+podman_runtime: "crun"

@@ -1,0 +1,41 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ../../requirements.yml
+
+driver:
+  name: vagrant
+
+platforms:
+  - name: prisma-console-lab
+    box: generic/rhel8
+    memory: 16384
+    cpus: 8
+    provider_raw_config_args:
+      - "customize ['modifyvm', :id, '--nictype1', 'virtio']"
+
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    group_vars:
+      prisma_console:
+        prisma_data_device: /dev/sdb
+        ntp_servers:
+          - pool.ntp.org
+        firewall_allow_operator_cidr: 0.0.0.0/0
+        firewall_allow_defender_cidr: 0.0.0.0/0
+
+verifier:
+  name: ansible
+
+scenario:
+  test_sequence:
+    - dependency
+    - create
+    - converge
+    - verify
+    - destroy

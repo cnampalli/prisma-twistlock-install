@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: prisma_tls
+  description: Stage internal-CA-issued TLS material for Prisma Console
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

@@ -1,0 +1,99 @@
+---
+- name: Assert RHEL 8
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == "RedHat"
+      - ansible_facts['distribution_major_version'] == "8"
+    fail_msg: "This role supports RHEL 8 only (found {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }})"
+
+- name: Install baseline packages
+  ansible.builtin.dnf:
+    name: "{{ rhel_baseline_packages }}"
+    state: present
+
+- name: Ensure SELinux is Enforcing in config
+  ansible.builtin.lineinfile:
+    path: /etc/selinux/config
+    regexp: "^SELINUX="
+    line: "SELINUX=enforcing"
+    state: present
+
+- name: Put SELinux into enforcing mode at runtime
+  ansible.posix.selinux:
+    policy: targeted
+    state: enforcing
+
+- name: Enable and start core services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: started
+  loop:
+    - chronyd
+    - firewalld
+    - auditd
+    - rsyslog
+
+- name: Render chrony.conf
+  ansible.builtin.template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart chrony
+
+- name: Harden sshd
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+    validate: "sshd -t -f %s"
+  loop:
+    - { regexp: "^#?PermitRootLogin", line: "PermitRootLogin no" }
+    - { regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication no" }
+    - { regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes" }
+  notify: Reload sshd
+
+- name: Allow firewalld ports
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ rhel_baseline_firewall_ports }}"
+
+- name: Allow firewalld services
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ rhel_baseline_firewall_services }}"
+
+- name: Apply sysctl baseline
+  ansible.builtin.template:
+    src: 90-prisma.conf.j2
+    dest: /etc/sysctl.d/90-prisma.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload sysctl
+
+- name: Ensure journald drop-in dir
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Cap journald growth
+  ansible.builtin.template:
+    src: journald-10-prisma.conf.j2
+    dest: /etc/systemd/journald.conf.d/10-prisma.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart journald

@@ -1,0 +1,37 @@
+---
+- name: Check current FIPS state
+  ansible.builtin.slurp:
+    src: /proc/sys/crypto/fips_enabled
+  register: fips_state
+
+- name: Enable FIPS mode in kernel + system crypto policy
+  ansible.builtin.command: fips-mode-setup --enable
+  register: fips_enable
+  changed_when: "'FIPS mode will be enabled' in fips_enable.stdout or 'FIPS mode was enabled' in fips_enable.stdout"
+  when: (fips_state.content | b64decode | trim) != "1"
+
+- name: Reboot to activate FIPS
+  ansible.builtin.reboot:
+    reboot_timeout: 600
+    test_command: test -f /proc/sys/crypto/fips_enabled
+  when: fips_enable.changed | default(false)
+
+- name: Re-read FIPS state after reboot
+  ansible.builtin.slurp:
+    src: /proc/sys/crypto/fips_enabled
+  register: fips_state_post
+
+- name: Read system crypto policy
+  ansible.builtin.command: update-crypto-policies --show
+  register: crypto_policy
+  changed_when: false
+
+- name: Assert FIPS is active
+  ansible.builtin.assert:
+    that:
+      - (fips_state_post.content | b64decode | trim) == "1"
+      - crypto_policy.stdout.strip() == "FIPS"
+    fail_msg: |
+      FIPS did not activate. Kernel reports fips_enabled={{ fips_state_post.content | b64decode | trim }}
+      and crypto policy {{ crypto_policy.stdout.strip() }}. Investigate manually per runbook Phase 2.
+    success_msg: "FIPS 140-2 mode confirmed active."

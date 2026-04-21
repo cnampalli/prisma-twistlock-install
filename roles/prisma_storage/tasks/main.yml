@@ -1,0 +1,71 @@
+---
+- name: Assert data device is present
+  ansible.builtin.stat:
+    path: "{{ prisma_data_device }}"
+  register: data_dev
+
+- name: Fail if data device missing
+  ansible.builtin.fail:
+    msg: |
+      Expected data device {{ prisma_data_device }} not present on {{ inventory_hostname }}.
+      Check vSphere hardware or adjust prisma_data_device per host.
+  when: not data_dev.stat.exists
+
+- name: Create volume group on data device
+  community.general.lvg:
+    vg: "{{ prisma_vg_name }}"
+    pvs: "{{ prisma_data_device }}"
+
+- name: Create logical volume
+  community.general.lvol:
+    vg: "{{ prisma_vg_name }}"
+    lv: "{{ prisma_lv_name }}"
+    size: 100%FREE
+    shrink: false
+
+- name: Format XFS on logical volume
+  community.general.filesystem:
+    fstype: xfs
+    dev: "/dev/{{ prisma_vg_name }}/{{ prisma_lv_name }}"
+    opts: "-L {{ prisma_fs_label }}"
+
+- name: Ensure data folder exists
+  ansible.builtin.file:
+    path: "{{ prisma_data_folder }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Mount and persist data volume
+  ansible.posix.mount:
+    path: "{{ prisma_data_folder }}"
+    src: "/dev/{{ prisma_vg_name }}/{{ prisma_lv_name }}"
+    fstype: xfs
+    opts: "defaults,noatime,inode64"
+    state: mounted
+
+- name: Register SELinux fcontext for data folder
+  community.general.sefcontext:
+    target: '{{ prisma_data_folder }}(/.*)?'
+    setype: container_file_t
+    state: present
+
+- name: Apply SELinux labels
+  ansible.builtin.command: "restorecon -R {{ prisma_data_folder }}"
+  changed_when: false
+
+- name: Assert mount is XFS, not NFS, correct label
+  block:
+    - name: Read mount details
+      ansible.builtin.command: "findmnt -n -o FSTYPE,OPTIONS,SOURCE {{ prisma_data_folder }}"
+      register: mount_info
+      changed_when: false
+
+    - name: Assert mount properties
+      ansible.builtin.assert:
+        that:
+          - "'xfs' in mount_info.stdout"
+          - "'noatime' in mount_info.stdout"
+          - "'nfs' not in mount_info.stdout"
+        fail_msg: "Data dir mount failed expected properties: {{ mount_info.stdout }}"

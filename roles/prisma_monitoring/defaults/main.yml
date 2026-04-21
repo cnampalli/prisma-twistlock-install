@@ -1,0 +1,5 @@
+---
+node_exporter_user: "node_exporter"
+node_exporter_bin: "/usr/local/bin/node_exporter"
+node_exporter_tarball: "node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
+# Operator drops node_exporter tarball under files/ alongside the Prisma tarball.

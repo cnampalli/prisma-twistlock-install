@@ -1,0 +1,13 @@
+# Managed by Ansible — prisma-twistlock-install / podman_config
+# Keep podman graph on OS disk; Prisma data lives on the dedicated LV at {{ prisma_data_folder }}.
+
+[storage]
+driver = "overlay"
+runroot = "/run/containers/storage"
+graphroot = "/var/lib/containers/storage"
+
+[storage.options]
+additionalimagestores = []
+
+[storage.options.overlay]
+mountopt = "nodev,metacopy=on"

@@ -1,0 +1,76 @@
+---
+- name: Verify — assert runbook [A] acceptance criteria
+  hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: FIPS kernel
+      ansible.builtin.slurp:
+        src: /proc/sys/crypto/fips_enabled
+      register: fips_state
+
+    - name: Assert FIPS kernel
+      ansible.builtin.assert:
+        that: (fips_state.content | b64decode | trim) == "1"
+
+    - name: Crypto policy
+      ansible.builtin.command: update-crypto-policies --show
+      register: cp
+      changed_when: false
+
+    - name: Assert crypto policy
+      ansible.builtin.assert:
+        that: cp.stdout.strip() == "FIPS"
+
+    - name: SELinux enforcing
+      ansible.builtin.command: getenforce
+      register: se
+      changed_when: false
+
+    - name: Assert SELinux enforcing
+      ansible.builtin.assert:
+        that: se.stdout.strip() == "Enforcing"
+
+    - name: Data volume is XFS and mounted
+      ansible.builtin.command: "findmnt -n -o FSTYPE,OPTIONS /var/lib/twistlock"
+      register: mt
+      changed_when: false
+
+    - name: Assert XFS + noatime + not NFS
+      ansible.builtin.assert:
+        that:
+          - "'xfs' in mt.stdout"
+          - "'noatime' in mt.stdout"
+          - "'nfs' not in mt.stdout"
+
+    - name: Podman info
+      ansible.builtin.command: podman info
+      register: pi
+      changed_when: false
+
+    - name: Assert podman config
+      ansible.builtin.assert:
+        that:
+          - "'overlay' in pi.stdout"
+          - "'seccomp' in pi.stdout"
+          - "'selinux' in pi.stdout"
+
+    - name: Firewall ports
+      ansible.builtin.command: firewall-cmd --list-ports
+      register: fw
+      changed_when: false
+
+    - name: Assert firewall
+      ansible.builtin.assert:
+        that:
+          - "'8083/tcp' in fw.stdout"
+          - "'8084/tcp' in fw.stdout"
+
+    - name: Journald drop-in present
+      ansible.builtin.stat:
+        path: /etc/systemd/journald.conf.d/10-prisma.conf
+      register: jd
+
+    - name: Assert journald drop-in
+      ansible.builtin.assert:
+        that: jd.stat.exists

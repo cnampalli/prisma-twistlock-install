@@ -1,0 +1,55 @@
+---
+- name: Ensure install dir
+  ansible.builtin.file:
+    path: "{{ prisma_install_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Stage Prisma tarball
+  ansible.builtin.copy:
+    src: "{{ prisma_tarball_name }}"
+    dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Stage SHA-256 manifest
+  ansible.builtin.copy:
+    src: "{{ prisma_tarball_name }}.sha256"
+    dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}.sha256"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Verify tarball integrity
+  ansible.builtin.command: "sha256sum -c {{ prisma_tarball_name }}.sha256"
+  args:
+    chdir: "{{ prisma_install_dir }}"
+  register: sha_check
+  changed_when: false
+  failed_when: "'OK' not in sha_check.stdout"
+
+- name: Extract installer
+  ansible.builtin.unarchive:
+    src: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}"
+    dest: "{{ prisma_install_dir }}/"
+    remote_src: true
+    creates: "{{ prisma_extracted_dir }}/twistlock.sh"
+
+- name: Locate shipped config file
+  ansible.builtin.find:
+    paths: "{{ prisma_extracted_dir }}"
+    patterns: "twistlock.cfg*"
+  register: shipped_cfg
+
+- name: Assert shipped config present
+  ansible.builtin.assert:
+    that: shipped_cfg.files | length > 0
+    fail_msg: "No twistlock.cfg* found in {{ prisma_extracted_dir }} — tarball layout unexpected."
+
+- name: Assert twistlock.sh executable
+  ansible.builtin.file:
+    path: "{{ prisma_extracted_dir }}/twistlock.sh"
+    mode: "0750"

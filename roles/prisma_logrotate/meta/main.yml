@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: prisma_logrotate
+  description: logrotate policy for Prisma Console application logs
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

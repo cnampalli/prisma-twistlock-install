@@ -1,0 +1,34 @@
+---
+- name: Check shipped twistlock.cfg exists
+  ansible.builtin.stat:
+    path: "{{ prisma_extracted_dir }}/twistlock.cfg"
+  register: shipped_cfg
+
+- name: Preserve original shipped config (first run only)
+  ansible.builtin.copy:
+    src: "{{ prisma_extracted_dir }}/twistlock.cfg"
+    dest: "{{ prisma_extracted_dir }}/twistlock.cfg.orig"
+    remote_src: true
+    force: false
+    owner: root
+    group: root
+    mode: "0600"
+  when: shipped_cfg.stat.exists
+
+- name: Render twistlock.cfg
+  ansible.builtin.template:
+    src: twistlock.cfg.j2
+    dest: "{{ prisma_extracted_dir }}/twistlock.cfg"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  register: render_cfg
+
+- name: Print reconciliation reminder
+  ansible.builtin.debug:
+    msg: |
+      twistlock.cfg rendered. Before running ./twistlock.sh -s console,
+      confirm field names match twistlock.cfg.orig (shipped). If any key
+      name differs, update roles/prisma_config/templates/twistlock.cfg.j2
+      and re-run with --tags config.

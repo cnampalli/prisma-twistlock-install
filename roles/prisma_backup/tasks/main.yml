@@ -1,0 +1,56 @@
+---
+- name: Ensure backup dirs
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "/etc/prisma",               mode: "0750" }
+    - { path: "{{ prisma_backup_dir }}",   mode: "0750" }
+
+- name: Write backup script
+  ansible.builtin.template:
+    src: prisma-backup.sh.j2
+    dest: "{{ prisma_backup_script }}"
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Write backup environment file (operator populates secrets via Vault)
+  ansible.builtin.template:
+    src: backup.env.j2
+    dest: "{{ prisma_backup_env_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+    backup: true
+  no_log: true
+
+- name: Install systemd service
+  ansible.builtin.template:
+    src: prisma-backup.service.j2
+    dest: /etc/systemd/system/prisma-backup.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Daemon reload
+
+- name: Install systemd timer
+  ansible.builtin.template:
+    src: prisma-backup.timer.j2
+    dest: /etc/systemd/system/prisma-backup.timer
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Daemon reload
+
+- name: Flush handlers before enabling timer
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start timer
+  ansible.builtin.systemd:
+    name: prisma-backup.timer
+    enabled: true
+    state: started

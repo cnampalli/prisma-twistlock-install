@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: prisma_stage
+  description: Stage and verify Prisma Cloud Compute installer tarball; extract it
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

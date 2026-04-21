@@ -1,0 +1,16 @@
+# Managed by Ansible — prisma-twistlock-install / podman_config
+# Air-gapped Prisma Console host. No unqualified search; block external registries.
+
+unqualified-search-registries = []
+
+[[registry]]
+location = "{{ podman_internal_registry }}"
+insecure = false
+blocked = false
+
+{% for r in podman_blocked_registries %}
+[[registry]]
+location = "{{ r }}"
+blocked = true
+
+{% endfor %}

@@ -1,0 +1,7 @@
+---
+galaxy_info:
+  role_name: podman_config
+  description: Configure rootful podman for air-gapped FIPS Prisma Console host
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

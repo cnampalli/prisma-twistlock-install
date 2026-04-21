@@ -1,0 +1,10 @@
+---
+galaxy_info:
+  role_name: fips_enable
+  description: Enable RHEL 8 FIPS 140-2 mode; reboot; assert state
+  license: internal
+  min_ansible_version: "2.15"
+  platforms:
+    - name: EL
+      versions: ["8"]
+dependencies: []

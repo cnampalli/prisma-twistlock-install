@@ -1,0 +1,14 @@
+---
+- name: Phase 10 — systemd hardening, log rotation, backup, monitoring
+  hosts: prisma_console
+  gather_facts: true
+  become: true
+  roles:
+    - role: prisma_systemd
+      tags: [systemd]
+    - role: prisma_logrotate
+      tags: [logrotate]
+    - role: prisma_backup
+      tags: [backup]
+    - role: prisma_monitoring
+      tags: [monitoring]
