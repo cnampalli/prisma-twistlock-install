@@ -1,4 +1,6 @@
 ---
+# Requires collections: community.general (lvg, lvol, filesystem, sefcontext).
+# Pinned in requirements.yml.
 galaxy_info:
   role_name: prisma_storage
   description: LVM + XFS data volume for Prisma Console, SELinux labelled for container bind-mount

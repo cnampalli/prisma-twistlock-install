@@ -1,4 +1,5 @@
 ---
+# Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: podman_config
   description: Configure rootful podman for air-gapped FIPS Prisma Console host

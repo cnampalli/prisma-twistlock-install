@@ -1,4 +1,5 @@
 ---
+# Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: prisma_config
   description: Render twistlock.cfg for FIPS-mode Console install

@@ -1,4 +1,5 @@
 ---
+# Requires collections: ansible.posix (firewalld). Pinned in requirements.yml.
 galaxy_info:
   role_name: prisma_monitoring
   description: node_exporter + rsyslog shipping for Prisma Console

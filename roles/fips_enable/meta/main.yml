@@ -1,4 +1,5 @@
 ---
+# Requires collections: ansible.builtin only. Pinned base in requirements.yml.
 galaxy_info:
   role_name: fips_enable
   description: Enable RHEL 8 FIPS 140-2 mode; reboot; assert state
