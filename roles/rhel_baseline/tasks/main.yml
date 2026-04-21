@@ -4,7 +4,9 @@
     that:
       - ansible_facts['distribution'] == "RedHat"
       - ansible_facts['distribution_major_version'] == "8"
-    fail_msg: "This role supports RHEL 8 only (found {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }})"
+    fail_msg: >-
+      This role supports RHEL 8 only (found
+      {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }})
 
 - name: Install baseline packages
   ansible.builtin.dnf:
