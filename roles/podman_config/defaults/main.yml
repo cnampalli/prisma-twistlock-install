@@ -1,16 +1,32 @@
 ---
+# FQDN of the air-gapped internal registry hosting Prisma/Defender images.
 podman_internal_registry: "registry.internal"
+
+# Registries explicitly blocked — the Console host must not reach the
+# public internet, and egress to these would indicate a misconfigured pull.
 podman_blocked_registries:
   - docker.io
   - quay.io
   - registry.redhat.io
   - registry.access.redhat.com
 
+# Max log file size per container (bytes). 100 MB * log rotation keeps
+# the Defender-scan-heavy log volume bounded without losing debug context.
 podman_log_size_max: 104857600
+
+# PIDs ceiling per container — above Prisma's documented worker count.
 podman_pids_limit: 4096
+
+# ulimit nofile soft:hard — Prisma docs require >=65535 for file descriptors.
 podman_nofile: "65535:65535"
+
+# ulimit nproc soft:hard — enough headroom for Console worker threads.
 podman_nproc: "4096:4096"
+
+# Use systemd cgroup manager so podman plays nicely with RHEL 9's cgroup v2.
 podman_cgroup_manager: "systemd"
+
+# crun is the FIPS-validated OCI runtime on RHEL 9; required for FIPS mode.
 podman_runtime: "crun"
 
 # Optional: absolute path on the control host to a PEM-encoded CA cert that

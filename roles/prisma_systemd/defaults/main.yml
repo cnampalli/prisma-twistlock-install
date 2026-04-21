@@ -1,4 +1,13 @@
 ---
+# Systemd unit name for the Prisma Console service. Prisma's installer
+# creates this unit; we override it rather than replace it.
 prisma_systemd_unit: "twistlock"
+
+# Systemd TasksMax for the Console unit. Prisma spawns many worker threads
+# (scan workers, Defender brokers, DB) — the default 4096 ceiling has been
+# seen to block new goroutines under heavy Defender fleets.
 prisma_systemd_tasks_max: 8192
+
+# RestartSec — delay before systemd restarts the unit on failure. 10s gives
+# the DB time to flush/close before a fresh Console tries to reopen it.
 prisma_systemd_restart_sec: 10
