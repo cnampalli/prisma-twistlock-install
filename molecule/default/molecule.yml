@@ -24,8 +24,13 @@ provisioner:
     group_vars:
       prisma_console:
         prisma_data_device: /dev/sdb
+        # Public NTP in the lab VM where internal NTP is unreachable.
         ntp_servers:
           - pool.ntp.org
+        # Lab-only: the sandbox VM has no operator / Defender network, so
+        # firewalld is opened to 0.0.0.0/0. PRODUCTION must NOT use this —
+        # the real values (operator CIDR, Defender CIDR) live in
+        # group_vars/prisma_console.yml and default to 10.0.0.0/8.
         firewall_allow_operator_cidr: 0.0.0.0/0
         firewall_allow_defender_cidr: 0.0.0.0/0
 
