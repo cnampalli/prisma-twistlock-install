@@ -5,6 +5,13 @@ set -euo pipefail
 : "${PRISMA_BACKUP_TOKEN:?missing in env}"
 : "${INTERNAL_BACKUP_URL:?missing in env}"
 
+# Reject malformed / attacker-controlled URLs before handing them to curl.
+case "${INTERNAL_BACKUP_URL}" in
+  https://*|http://*) ;;
+  *) echo "INTERNAL_BACKUP_URL must be http(s)://; got '${INTERNAL_BACKUP_URL}'" >&2; exit 2 ;;
+esac
+INTERNAL_BACKUP_URL="${INTERNAL_BACKUP_URL%/}"
+
 ts=$(date -u +%Y%m%dT%H%M%SZ)
 out="{{ prisma_backup_dir }}/prisma-${ts}.tar.gz"
 
