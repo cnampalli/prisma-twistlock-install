@@ -3,3 +3,9 @@ prisma_backup_schedule: "*-*-* 02:15:00"
 prisma_backup_jitter_sec: 300
 prisma_backup_script: "/usr/local/sbin/prisma-backup.sh"
 prisma_backup_env_file: "/etc/prisma/backup.env"
+
+# TLS verification for curl calls from the backup script. Keep false in
+# production; only flip to true for greenfield lab rings before a CA is
+# issued. When false, --cacert is supplied from prisma_backup_ca_bundle.
+prisma_backup_insecure_tls: false
+prisma_backup_ca_bundle: "{{ prisma_cert_ca_path }}"

@@ -8,12 +8,13 @@ set -euo pipefail
 ts=$(date -u +%Y%m%dT%H%M%SZ)
 out="{{ prisma_backup_dir }}/prisma-${ts}.tar.gz"
 
-curl -ks --fail \
+{% set curl_tls = '-k' if prisma_backup_insecure_tls else '--cacert ' ~ prisma_backup_ca_bundle %}
+curl -s {{ curl_tls }} --fail \
   -u "${PRISMA_BACKUP_USER}:${PRISMA_BACKUP_TOKEN}" \
   -o "${out}" \
   "https://localhost:{{ prisma_https_port }}/api/v1/backups"
 
-curl -ks --fail \
+curl -s {{ curl_tls }} --fail \
   -T "${out}" \
   "${INTERNAL_BACKUP_URL}/$(basename "${out}")"
 
