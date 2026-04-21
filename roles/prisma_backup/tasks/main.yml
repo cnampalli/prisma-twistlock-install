@@ -7,8 +7,8 @@
     group: root
     mode: "{{ item.mode }}"
   loop:
-    - { path: "/etc/prisma",               mode: "0750" }
-    - { path: "{{ prisma_backup_dir }}",   mode: "0750" }
+    - { path: "/etc/prisma", mode: "0750" }
+    - { path: "{{ prisma_backup_dir }}", mode: "0750" }
 
 - name: Write backup script
   ansible.builtin.template:
