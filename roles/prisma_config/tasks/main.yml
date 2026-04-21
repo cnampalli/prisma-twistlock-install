@@ -25,7 +25,7 @@
     backup: true
   register: render_cfg
 
-- name: Print reconciliation reminder
+- name: MANUAL - Reconcile twistlock.cfg field names before Phase 9 install
   ansible.builtin.debug:
     msg: |
       twistlock.cfg rendered. Before running ./twistlock.sh -s console,
