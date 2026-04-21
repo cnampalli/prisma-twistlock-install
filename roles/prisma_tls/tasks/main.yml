@@ -24,22 +24,21 @@
   ansible.builtin.command: "restorecon -R {{ prisma_pki_dir }}"
   changed_when: false
 
-- name: Verify cert / key modulus match
-  block:
-    - name: Cert modulus
-      ansible.builtin.shell: "openssl x509 -noout -modulus -in {{ prisma_cert_path }} | openssl sha256 | awk '{print $2}'"
-      register: cert_mod
-      changed_when: false
+- name: Inspect certificate
+  community.crypto.x509_certificate_info:
+    path: "{{ prisma_cert_path }}"
+  register: cert_info
 
-    - name: Key modulus
-      ansible.builtin.shell: "openssl rsa -noout -modulus -in {{ prisma_cert_key_path }} | openssl sha256 | awk '{print $2}'"
-      register: key_mod
-      changed_when: false
+- name: Inspect private key
+  community.crypto.openssl_privatekey_info:
+    path: "{{ prisma_cert_key_path }}"
+  register: key_info
+  no_log: true
 
-    - name: Assert modulus match
-      ansible.builtin.assert:
-        that: cert_mod.stdout == key_mod.stdout
-        fail_msg: "TLS cert and key do not match (cert={{ cert_mod.stdout }} key={{ key_mod.stdout }})"
+- name: Assert cert and key match
+  ansible.builtin.assert:
+    that: cert_info.public_key == key_info.public_key
+    fail_msg: "TLS cert and key public keys do not match"
 
 - name: Verify cert chains to supplied CA
   ansible.builtin.command: "openssl verify -CAfile {{ prisma_cert_ca_path }} {{ prisma_cert_path }}"
