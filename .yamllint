@@ -1,0 +1,29 @@
+---
+extends: default
+
+ignore: |
+  .cache/
+  molecule/*/tmp/
+  molecule/*/.molecule/
+
+rules:
+  line-length:
+    max: 120
+    level: warning
+  document-start:
+    present: true
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+  truthy:
+    allowed-values: ['true', 'false']
+    check-keys: true
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: false
