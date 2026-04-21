@@ -10,7 +10,9 @@
   changed_when: "'FIPS mode will be enabled' in fips_enable.stdout or 'FIPS mode was enabled' in fips_enable.stdout"
   when: (fips_state.content | b64decode | trim) != "1"
 
-- name: Reboot to activate FIPS
+- name: Reboot to activate FIPS  # noqa: no-handler
+  # Not a handler: subsequent assertions in this role must run against the
+  # post-reboot kernel, and handlers fire at end of play (too late).
   ansible.builtin.reboot:
     reboot_timeout: 600
     test_command: test -f /proc/sys/crypto/fips_enabled
