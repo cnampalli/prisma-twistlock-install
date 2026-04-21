@@ -8,3 +8,14 @@ Type=oneshot
 EnvironmentFile={{ prisma_backup_env_file }}
 ExecStart={{ prisma_backup_script }}
 User=root
+SyslogIdentifier=prisma-backup
+# Journal-only logging keeps PRISMA_BACKUP_TOKEN out of syslog forwarders
+# that might ship plaintext to a remote aggregator.
+StandardOutput=journal
+StandardError=journal
+# Minor hardening — the script only needs the filesystem and network.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths={{ prisma_backup_dir }}
+ProtectHome=true
+PrivateTmp=true
