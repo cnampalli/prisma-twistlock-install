@@ -28,6 +28,24 @@
     group: root
     mode: "0644"
 
+- name: Ensure certs.d dir for internal registry
+  ansible.builtin.file:
+    path: "/etc/containers/certs.d/{{ podman_internal_registry }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: podman_registry_ca_cert | length > 0
+
+- name: Install CA cert for internal registry
+  ansible.builtin.copy:
+    src: "{{ podman_registry_ca_cert }}"
+    dest: "/etc/containers/certs.d/{{ podman_internal_registry }}/ca.crt"
+    owner: root
+    group: root
+    mode: "0644"
+  when: podman_registry_ca_cert | length > 0
+
 - name: Back up shipped storage.conf (first run only)
   ansible.builtin.copy:
     src: /etc/containers/storage.conf

@@ -12,3 +12,9 @@ podman_nofile: "65535:65535"
 podman_nproc: "4096:4096"
 podman_cgroup_manager: "systemd"
 podman_runtime: "crun"
+
+# Optional: absolute path on the control host to a PEM-encoded CA cert that
+# signs podman_internal_registry's serving certificate. When set, the cert is
+# copied to /etc/containers/certs.d/<registry>/ca.crt so podman validates
+# TLS against it. Leave empty to rely solely on the system trust store.
+podman_registry_ca_cert: ""
