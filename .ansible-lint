@@ -1,0 +1,23 @@
+---
+profile: production
+
+exclude_paths:
+  - .cache/
+  - .github/
+  - molecule/*/tmp/
+  - molecule/*/.molecule/
+
+# Air-gap + FIPS context drives these choices:
+skip_list:
+  # Internal registry + custom version pinning break fqcn-repeat checks.
+  - fqcn[action-core]
+  # Runbook uses ansible.builtin.command for openssl/firewall-cmd where a
+  # module is either unavailable (firewall-cmd --reload handler) or loses
+  # fidelity. Keep the lint active by default but allow explicit overrides.
+  - no-changed-when
+
+warn_list:
+  - experimental
+  - role-name
+
+use_default_rules: true
