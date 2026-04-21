@@ -17,7 +17,8 @@ rules:
     indent-sequences: true
     check-multi-line-strings: false
   truthy:
-    allowed-values: ['true', 'false']
+    # GitHub Actions requires the `on:` key, which YAML 1.1 treats as truthy.
+    allowed-values: ['true', 'false', 'on', 'off']
     check-keys: true
   comments:
     min-spaces-from-content: 1
