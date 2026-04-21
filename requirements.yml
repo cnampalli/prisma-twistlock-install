@@ -1,8 +1,12 @@
 ---
+# Pinned exact versions — air-gapped builds need reproducible dependency
+# resolution, and a patch bump to any of these collections has historically
+# introduced breaking behaviour (e.g. firewalld param rename, x509 module
+# return-shape changes). Bump intentionally and test in molecule/full.
 collections:
   - name: ansible.posix
-    version: ">=1.5.0"
+    version: "1.5.4"
   - name: community.general
-    version: ">=8.0.0"
+    version: "8.6.1"
   - name: community.crypto
-    version: ">=2.20.0"
+    version: "2.22.1"
