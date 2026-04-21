@@ -3,3 +3,7 @@ node_exporter_user: "node_exporter"
 node_exporter_bin: "/usr/local/bin/node_exporter"
 node_exporter_tarball: "node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz"
 # Operator drops node_exporter tarball under files/ alongside the Prisma tarball.
+# Required: SHA-256 hex digest of the tarball supplied by the operator. The
+# tarball is refused if this is empty or does not match — mirrors the Prisma
+# stage role's integrity check. Compute locally with: sha256sum <tarball>.
+node_exporter_sha256: ""

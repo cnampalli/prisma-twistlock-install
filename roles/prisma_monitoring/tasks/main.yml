@@ -7,6 +7,13 @@
     home: /var/lib/node_exporter
     create_home: false
 
+- name: Assert node_exporter checksum supplied
+  ansible.builtin.assert:
+    that: node_exporter_sha256 | length == 64
+    fail_msg: >-
+      node_exporter_sha256 must be the 64-char SHA-256 hex digest of
+      {{ node_exporter_tarball }}. Compute with: sha256sum {{ node_exporter_tarball }}
+
 - name: Stage node_exporter tarball (air-gap)
   ansible.builtin.copy:
     src: "{{ node_exporter_tarball }}"
@@ -14,6 +21,19 @@
     owner: root
     group: root
     mode: "0644"
+
+- name: Compute SHA-256 of staged node_exporter tarball
+  ansible.builtin.stat:
+    path: "/opt/{{ node_exporter_tarball }}"
+    checksum_algorithm: sha256
+  register: node_exporter_staged
+
+- name: Verify node_exporter tarball integrity
+  ansible.builtin.assert:
+    that: node_exporter_staged.stat.checksum == node_exporter_sha256
+    fail_msg: >-
+      node_exporter tarball integrity check FAILED.
+      expected={{ node_exporter_sha256 }} got={{ node_exporter_staged.stat.checksum }}
 
 - name: Extract node_exporter
   ansible.builtin.unarchive:
