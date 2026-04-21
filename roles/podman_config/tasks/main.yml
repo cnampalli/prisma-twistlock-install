@@ -24,6 +24,9 @@
     dest: /etc/containers/registries.conf.orig
     remote_src: true
     force: false
+    owner: root
+    group: root
+    mode: "0644"
   when: registries_shipped.stat.exists
 
 - name: Render registries.conf
@@ -66,6 +69,9 @@
     dest: /etc/containers/storage.conf.orig
     remote_src: true
     force: false
+    owner: root
+    group: root
+    mode: "0644"
   when: storage_shipped.stat.exists
 
 - name: Render storage.conf
@@ -88,6 +94,9 @@
     dest: /etc/containers/containers.conf.orig
     remote_src: true
     force: false
+    owner: root
+    group: root
+    mode: "0644"
   when: containers_shipped.stat.exists
 
 - name: Render containers.conf
