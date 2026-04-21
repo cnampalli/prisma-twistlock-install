@@ -1,4 +1,26 @@
 #!/usr/bin/env bash
+#
+# Prisma Console nightly backup.
+#
+# Rendered from roles/prisma_backup/templates/prisma-backup.sh.j2 to
+# {{ prisma_backup_script }}. Invoked by prisma-backup.timer on the
+# schedule defined by {{ prisma_backup_schedule }} (jitter
+# {{ prisma_backup_jitter_sec }}s) as root.
+#
+# Required environment (sourced from {{ prisma_backup_env_file }}):
+#   PRISMA_BACKUP_USER    — Prisma Console API user
+#   PRISMA_BACKUP_TOKEN   — Prisma Console API token (secret)
+#   INTERNAL_BACKUP_URL   — http(s):// endpoint for the internal artefact
+#                           store; the script PUTs the backup tarball here
+#
+# Behaviour:
+#   1. Pull a fresh backup from https://<console-fqdn>:{{ prisma_https_port }}/api/v1/backups
+#   2. PUT it to ${INTERNAL_BACKUP_URL}/<basename>
+#   3. Prune local copies older than {{ prisma_backup_retention_days }} days
+#
+# Exits non-zero (set -e) on any curl failure; systemd will log failure
+# under SyslogIdentifier=prisma-backup.
+#
 set -euo pipefail
 
 : "${PRISMA_BACKUP_USER:?missing in env}"
