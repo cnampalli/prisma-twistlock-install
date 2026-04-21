@@ -15,6 +15,14 @@ vault_pass*
 .ansible/
 .cache/
 
+# Molecule transient
+molecule/**/.molecule/
+molecule/**/tmp/
+
+# Python transient
+**/__pycache__/
+**/*.pyc
+
 # Editor
 .idea/
 .vscode/
