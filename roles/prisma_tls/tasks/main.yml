@@ -18,7 +18,7 @@
     - { src: "{{ prisma_cert_src }}",      dest: "{{ prisma_cert_path }}",     mode: "0600" }
     - { src: "{{ prisma_key_src }}",       dest: "{{ prisma_cert_key_path }}", mode: "0600" }
     - { src: "{{ prisma_ca_chain_src }}",  dest: "{{ prisma_cert_ca_path }}",  mode: "0644" }
-  no_log: false
+  no_log: true
 
 - name: Restore SELinux context on PKI dir
   ansible.builtin.command: "restorecon -R {{ prisma_pki_dir }}"
