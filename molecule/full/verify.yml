@@ -1,0 +1,29 @@
+---
+- name: Verify — mocked artefacts landed and were validated
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Console cert installed
+      ansible.builtin.stat:
+        path: /etc/pki/prisma/console.crt
+      register: crt
+
+    - name: Console key installed with 0600
+      ansible.builtin.stat:
+        path: /etc/pki/prisma/console.key
+      register: key
+
+    - name: CA chain installed
+      ansible.builtin.stat:
+        path: /etc/pki/prisma/ca-chain.crt
+      register: ca
+
+    - name: Assert TLS artefacts present and mode-safe
+      ansible.builtin.assert:
+        that:
+          - crt.stat.exists
+          - key.stat.exists
+          - ca.stat.exists
+          - key.stat.mode == "0600"
+          - crt.stat.mode == "0600"

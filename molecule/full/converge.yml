@@ -1,0 +1,36 @@
+---
+# Converge under the docker-based full scenario. Exercises the roles that
+# default/ skips: prisma_tls (community.crypto), prisma_stage (sha256sum),
+# prisma_config (templating), and prisma_monitoring (M7 digest check).
+# Kernel-dependent roles (fips_enable, prisma_storage, firewalld reloads)
+# are omitted because containers cannot faithfully simulate them.
+- name: Converge — full scenario (mocked artefacts)
+  hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    mock_files_dir: /opt/mock-files
+    # Override the defaults that assume the control host's files/ dir.
+    prisma_cert_src: "{{ mock_files_dir }}/console.crt"
+    prisma_key_src: "{{ mock_files_dir }}/console.key"
+    prisma_ca_chain_src: "{{ mock_files_dir }}/ca-chain.crt"
+    # Stage sources are looked up via the role's `files:` search path; point
+    # the copy module at the absolute path of the mock tarball.
+    prisma_tarball_name: "prisma_cloud_compute_edition_34_01_126.tar.gz"
+    node_exporter_tarball: "node_exporter-1.8.2.linux-amd64.tar.gz"
+  pre_tasks:
+    - name: Stage tarballs into role search path
+      ansible.builtin.copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        remote_src: true
+        mode: "0644"
+      loop:
+        - { src: "{{ mock_files_dir }}/prisma_cloud_compute_edition_34_01_126.tar.gz",
+            dest: "/root/prisma_cloud_compute_edition_34_01_126.tar.gz" }
+        - { src: "{{ mock_files_dir }}/prisma_cloud_compute_edition_34_01_126.tar.gz.sha256",
+            dest: "/root/prisma_cloud_compute_edition_34_01_126.tar.gz.sha256" }
+        - { src: "{{ mock_files_dir }}/node_exporter-1.8.2.linux-amd64.tar.gz",
+            dest: "/root/node_exporter-1.8.2.linux-amd64.tar.gz" }
+  roles:
+    - role: prisma_tls

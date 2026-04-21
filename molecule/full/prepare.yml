@@ -1,0 +1,81 @@
+---
+# Fabricate the operator-supplied artefacts the runbook consumes:
+# - Prisma tarball + matching SHA-256 manifest (sha256sum -c gate)
+# - TLS console cert/key + CA chain (community.crypto assertion gate)
+# - node_exporter tarball with computed SHA-256 (M7 gate)
+#
+# Digests are computed at prepare time and threaded through group_vars so
+# we never have to keep a hardcoded value in sync with a build product.
+- name: Prepare mock artefacts on target + control host
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    files_dir: /opt/mock-files
+    tarball: "prisma_cloud_compute_edition_34_01_126.tar.gz"
+    ne_tarball: "node_exporter-1.8.2.linux-amd64.tar.gz"
+  tasks:
+    - name: Ensure mock files dir
+      ansible.builtin.file:
+        path: "{{ files_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Install tooling used by the prepare play
+      ansible.builtin.package:
+        name:
+          - openssl
+          - tar
+          - gzip
+          - coreutils
+        state: present
+
+    - name: Build Prisma mock payload + sha256 manifest
+      ansible.builtin.shell: |
+        set -euo pipefail
+        payload="{{ files_dir }}/payload"
+        extracted="prisma_cloud_compute_edition_34_01_126"
+        rm -rf "$payload" && mkdir -p "$payload/$extracted"
+        printf '#!/bin/sh\nexit 0\n' > "$payload/$extracted/twistlock.sh"
+        chmod 0750 "$payload/$extracted/twistlock.sh"
+        printf 'CUSTOM_CERT=true\n' > "$payload/$extracted/twistlock.cfg"
+        tar -C "$payload" -czf "{{ files_dir }}/{{ tarball }}" "$extracted"
+        (cd "{{ files_dir }}" && sha256sum "{{ tarball }}" > "{{ tarball }}.sha256")
+      args:
+        creates: "{{ files_dir }}/{{ tarball }}.sha256"
+
+    - name: Generate mock CA + Console cert/key
+      ansible.builtin.shell: |
+        set -euo pipefail
+        cd "{{ files_dir }}"
+        openssl req -x509 -newkey rsa:2048 -sha256 -days 7 -nodes \
+          -keyout ca.key -out ca-chain.crt -subj "/CN=Mock Internal CA"
+        openssl req -newkey rsa:2048 -nodes -keyout console.key -out console.csr \
+          -subj "/CN=prisma-console.mock"
+        openssl x509 -req -in console.csr -CA ca-chain.crt -CAkey ca.key \
+          -CAcreateserial -days 7 -sha256 -out console.crt
+      args:
+        creates: "{{ files_dir }}/console.crt"
+
+    - name: Build mock node_exporter tarball
+      ansible.builtin.shell: |
+        set -euo pipefail
+        cd "{{ files_dir }}"
+        rm -rf ne && mkdir -p "ne/node_exporter-1.8.2.linux-amd64"
+        printf '#!/bin/sh\nexit 0\n' > "ne/node_exporter-1.8.2.linux-amd64/node_exporter"
+        chmod 0755 "ne/node_exporter-1.8.2.linux-amd64/node_exporter"
+        tar -C ne -czf "{{ ne_tarball }}" "node_exporter-1.8.2.linux-amd64"
+      args:
+        creates: "{{ files_dir }}/{{ ne_tarball }}"
+
+    - name: Compute node_exporter digest
+      ansible.builtin.stat:
+        path: "{{ files_dir }}/{{ ne_tarball }}"
+        checksum_algorithm: sha256
+      register: ne_stat
+
+    - name: Publish digest to in-memory group_vars for converge
+      ansible.builtin.add_host:
+        name: "{{ inventory_hostname }}"
+        groups: prisma_console
+        node_exporter_sha256: "{{ ne_stat.stat.checksum }}"
