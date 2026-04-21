@@ -3,6 +3,7 @@
   ansible.builtin.command: podman --version
   register: podman_ver
   changed_when: false
+  tags: [assert]
 
 - name: Ensure /etc/containers exists
   ansible.builtin.file:
@@ -32,6 +33,7 @@
     owner: root
     group: root
     mode: "0644"
+  tags: [registries]
 
 - name: Ensure certs.d dir for internal registry
   ansible.builtin.file:
@@ -41,6 +43,7 @@
     group: root
     mode: "0755"
   when: podman_registry_ca_cert | length > 0
+  tags: [registries]
 
 - name: Install CA cert for internal registry
   ansible.builtin.copy:
@@ -50,6 +53,7 @@
     group: root
     mode: "0644"
   when: podman_registry_ca_cert | length > 0
+  tags: [registries]
 
 - name: Stat shipped storage.conf
   ansible.builtin.stat:
@@ -71,6 +75,7 @@
     owner: root
     group: root
     mode: "0644"
+  tags: [storage]
 
 - name: Stat shipped containers.conf
   ansible.builtin.stat:
@@ -92,6 +97,7 @@
     owner: root
     group: root
     mode: "0644"
+  tags: [containers]
 
 - name: Mask podman API socket (not required by Console)
   ansible.builtin.systemd:

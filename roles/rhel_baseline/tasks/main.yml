@@ -10,6 +10,7 @@
   ansible.builtin.dnf:
     name: "{{ rhel_baseline_packages }}"
     state: present
+  tags: [packages]
 
 - name: Ensure SELinux is Enforcing in config
   ansible.builtin.lineinfile:
@@ -17,11 +18,13 @@
     regexp: "^SELINUX="
     line: "SELINUX=enforcing"
     state: present
+  tags: [selinux]
 
 - name: Put SELinux into enforcing mode at runtime
   ansible.posix.selinux:
     policy: targeted
     state: enforcing
+  tags: [selinux]
 
 - name: Enable and start core services
   ansible.builtin.systemd:
@@ -33,6 +36,7 @@
     - firewalld
     - auditd
     - rsyslog
+  tags: [services]
 
 - name: Render chrony.conf
   ansible.builtin.template:
@@ -42,6 +46,7 @@
     group: root
     mode: "0644"
   notify: Restart chrony
+  tags: [ntp]
 
 - name: Harden sshd
   ansible.builtin.lineinfile:
@@ -55,6 +60,7 @@
     - { regexp: "^#?PasswordAuthentication", line: "PasswordAuthentication no" }
     - { regexp: "^#?PubkeyAuthentication", line: "PubkeyAuthentication yes" }
   notify: Reload sshd
+  tags: [sshd]
 
 - name: Allow firewalld ports
   ansible.posix.firewalld:
@@ -63,6 +69,7 @@
     immediate: true
     state: enabled
   loop: "{{ rhel_baseline_firewall_ports }}"
+  tags: [firewall]
 
 - name: Allow firewalld services
   ansible.posix.firewalld:
@@ -71,6 +78,7 @@
     immediate: true
     state: enabled
   loop: "{{ rhel_baseline_firewall_services }}"
+  tags: [firewall]
 
 - name: Apply sysctl baseline
   ansible.builtin.template:
@@ -80,6 +88,7 @@
     group: root
     mode: "0644"
   notify: Reload sysctl
+  tags: [sysctl]
 
 - name: Ensure journald drop-in dir
   ansible.builtin.file:
@@ -88,6 +97,7 @@
     owner: root
     group: root
     mode: "0755"
+  tags: [journald]
 
 - name: Cap journald growth
   ansible.builtin.template:
@@ -97,3 +107,4 @@
     group: root
     mode: "0644"
   notify: Restart journald
+  tags: [journald]
