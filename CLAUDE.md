@@ -31,11 +31,14 @@ molecule converge -s default && molecule verify -s default  # dev loop
 
 Playbooks map 1:1 to runbook phases and compose roles in order:
 
-- `00-baseline.yml` → `rhel_baseline` → `fips_enable` → `prisma_storage` (Phases 2–4)
-- `10-podman.yml` → `podman_config` (Phase 5)
-- `20-prisma-stage.yml` → `prisma_tls` → `prisma_stage` → `prisma_config` (Phases 6–8). Ends with a reminder to run `./twistlock.sh -s console` manually (Phase 9).
-- `30-prisma-ops.yml` → `prisma_systemd` → `prisma_logrotate` → `prisma_backup` → `prisma_monitoring` (Phase 10). Run **after** Phase 9 has created `/etc/systemd/system/twistlock.service`.
-- `site.yml` imports 00 → 10 → 20 (not 30 — depends on manual Phase 9).
+- `00-baseline.yml` — two plays: `rhel_baseline` + `fips_enable` on `prisma_all`, `prisma_storage` on `prisma_console` (Phases 2–4).
+- `10-podman.yml` → `podman_config` on `prisma_console` (Phase 5).
+- `11-docker.yml` → `docker_stage` → `docker_config` on `prisma_scanner:prisma_sandbox` (Phase 3b).
+- `20-prisma-stage.yml` → `prisma_tls` → `prisma_stage` → `prisma_config` on `prisma_console` (Phases 6–8). Ends with a reminder to run `./twistlock.sh -s console` manually (Phase 9).
+- `30-prisma-ops.yml` → `prisma_systemd` → `prisma_logrotate` → `prisma_backup` → `prisma_monitoring` on `prisma_console` (Phase 10). Run **after** Phase 9 has created `/etc/systemd/system/twistlock.service`.
+- `site.yml` imports 00 → 10 → 11 → 20 (not 30 — depends on manual Phase 9).
+
+**docker / podman mutex**: `prisma_console` runs rootful podman; `prisma_scanner` and `prisma_sandbox` run docker-ce. Never on the same host. Podman lives in `rhel_baseline_container_packages` (set to `[podman]` in `group_vars/prisma_console.yml` only). `docker_stage` asserts `rpm -q podman` fails before it installs anything.
 
 ## Invariants — do not break
 

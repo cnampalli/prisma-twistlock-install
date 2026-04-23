@@ -4,8 +4,11 @@
 - name: Phase 2 - RHEL baseline + FIPS
   import_playbook: 00-baseline.yml
 
-- name: Phase 3 - Podman rootful runtime
+- name: Phase 3 - Podman rootful runtime (console)
   import_playbook: 10-podman.yml
 
-- name: Phases 4-8 - Stage, TLS, config, install, systemd
+- name: Phase 3b - Docker-ce runtime (scanner + sandbox)
+  import_playbook: 11-docker.yml
+
+- name: Phases 4-8 - Stage, TLS, config, install, systemd (console)
   import_playbook: 20-prisma-stage.yml

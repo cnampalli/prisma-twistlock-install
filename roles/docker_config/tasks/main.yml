@@ -1,0 +1,54 @@
+---
+- name: Ensure /etc/docker exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render daemon.json
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Ensure docker systemd override dir
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render docker systemd override
+  ansible.builtin.template:
+    src: override.conf.j2
+    dest: /etc/systemd/system/docker.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Enable and start docker
+  ansible.builtin.systemd:
+    name: docker.service
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Smoke test docker config
+  ansible.builtin.command: docker info --format '{% raw %}{{.Driver}} {{.CgroupDriver}} {{.SecurityOptions}}{% endraw %}'
+  register: docker_info
+  changed_when: false
+
+- name: Assert docker runtime properties
+  ansible.builtin.assert:
+    that:
+      - docker_storage_driver in docker_info.stdout
+      - "'systemd' in docker_info.stdout"
+      - "'seccomp' in docker_info.stdout"
+    fail_msg: "docker info did not report expected config — check /etc/docker/daemon.json"

@@ -112,14 +112,27 @@ Lowest → highest:
 
 ## Phased rollout
 
-1. **Phase 1** — inventory restructure (no behavior change). **← this PR**
-2. **Phase 2** — `docker_stage` + `docker_config` roles + `11-docker.yml`;
-   FIPS feasibility doc. No new host types actually installed yet.
-3. **Phase 3** — `prisma_defender` + `21-defender.yml`.
-4. **Phase 4** — `prisma_sandbox` + `22-sandbox.yml`.
-5. **Phase 5** — memory enforcement (Task 3) across existing + new roles.
-6. **Phase 6** — `prisma_restore` + `40-dr-drill.yml`; `prisma_backup_dir`
-   default change.
+1. **Phase 1** — inventory restructure (no behavior change). Shipped as
+   commit `91c8fbc`.
+2. **Phase 2** — `docker_stage` + `docker_config` roles +
+   `11-docker.yml`; `rhel_baseline` split so the role runs against
+   `prisma_all`; `00-baseline.yml` retargeted to `prisma_all` for
+   baseline+FIPS, `prisma_console` for storage; `11-docker.yml` wired
+   into `site.yml`; FIPS feasibility doc with the twistcli v34.01.126
+   findings.
+3. **Phase 3** — **manual install on a lab scanner VM first**
+   (`twistcli defender install standalone`) to confirm runtime
+   behaviour under FIPS, per the checklist in
+   `docs/fips-feasibility.md#phase-3-manual-validation-checklist`.
+   **Then** `prisma_defender` role + `21-defender.yml` automating the
+   confirmed path.
+4. **Phase 4** — manual `twistcli sandbox` test on a lab sandbox VM,
+   then `prisma_sandbox` role + `22-sandbox.yml`.
+5. **Phase 5** — memory enforcement (Task 3) across existing + new
+   roles.
+6. **Phase 6** — `prisma_restore` + `40-dr-drill.yml`;
+   `prisma_backup_dir` default change. Use `twistcli restore` which we
+   confirmed exists as a top-level command.
 7. **Phase 7** — manual-install docs.
 
 ## Verification

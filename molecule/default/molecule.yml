@@ -21,8 +21,22 @@ provisioner:
     converge: converge.yml
     verify: verify.yml
   inventory:
+    hosts:
+      prisma_console:
+        hosts:
+          prisma-console-lab:
     group_vars:
       prisma_console:
+        # Console ports + host-class container package — normally
+        # inherited from group_vars/prisma_console.yml at the project
+        # root. Molecule runs from the scenario dir, so we inline them.
+        prisma_https_port: 8083
+        prisma_comm_port: 8084
+        rhel_baseline_container_packages:
+          - podman
+        rhel_baseline_firewall_ports:
+          - "8083/tcp"
+          - "8084/tcp"
         prisma_data_device: /dev/sdb
         # Public NTP in the lab VM where internal NTP is unreachable.
         ntp_servers:

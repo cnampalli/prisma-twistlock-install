@@ -1,0 +1,16 @@
+---
+# Pinned docker-ce stack, operator-staged under files/ of the play (same
+# pattern as prisma_stage). Filenames match upstream RHEL 8 naming for the
+# pinned versions; bump deliberately and re-verify in molecule/full.
+
+docker_ce_version: "28.3.3"
+docker_cli_version: "28.3.3"
+docker_containerd_version: "1.7.27"
+
+docker_engine_rpm: "docker-ce-{{ docker_ce_version }}-1.el8.x86_64.rpm"
+docker_cli_rpm: "docker-ce-cli-{{ docker_cli_version }}-1.el8.x86_64.rpm"
+docker_containerd_rpm: "containerd.io-{{ docker_containerd_version }}-1.el8.x86_64.rpm"
+
+# Staging directory on the target host. Mirrors prisma_install_dir for
+# locality and easy manual inspection by operators.
+docker_stage_dir: "/opt/docker-install"

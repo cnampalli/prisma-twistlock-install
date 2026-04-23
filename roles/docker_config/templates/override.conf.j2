@@ -1,0 +1,8 @@
+# Managed by Ansible — prisma-twistlock-install / docker_config
+[Service]
+Restart=on-failure
+RestartSec={{ docker_systemd_restart_sec }}s
+CPUAccounting=yes
+MemoryAccounting=yes
+IOAccounting=yes
+TasksMax={{ docker_systemd_tasks_max }}

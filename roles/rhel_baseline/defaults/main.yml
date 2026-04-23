@@ -1,9 +1,11 @@
 ---
-# Minimum package set for a Prisma Console host. policycoreutils-python-utils
-# is required by ansible.posix.selinux; rsyslog + audit satisfy the Prisma
-# hardening guide; curl is used by the backup script.
+# Minimum package set applied to every Prisma host class (console, scanner,
+# sandbox). policycoreutils-python-utils is required by ansible.posix.selinux;
+# rsyslog + audit satisfy the Prisma hardening guide; curl is used by the
+# backup script. lvm2 + xfsprogs stay in the core list because all three
+# host classes provision a 200GB data volume (scanner + sandbox use the disk
+# for image pull caches; console uses it for /var/lib/twistlock).
 rhel_baseline_packages:
-  - podman
   - lvm2
   - xfsprogs
   - chrony
@@ -18,10 +20,16 @@ rhel_baseline_packages:
   - audit
   - curl
 
-# Ports opened on firewalld. 8083 is the Console UI/API, 8084 is Defender comms.
-rhel_baseline_firewall_ports:
-  - "{{ prisma_https_port }}/tcp"
-  - "{{ prisma_comm_port }}/tcp"
+# Container-runtime package(s) — host-class specific. Console gets podman;
+# scanner and sandbox get [] here (docker-ce is installed by docker_stage).
+# Override in group_vars/prisma_console.yml.
+rhel_baseline_container_packages: []
+
+# Ports opened on firewalld. Empty by default — only the Console has
+# inbound ports (8083 UI/API, 8084 Defender comms), set in
+# group_vars/prisma_console.yml. Scanner + sandbox have no inbound
+# services beyond SSH (covered by rhel_baseline_firewall_services).
+rhel_baseline_firewall_ports: []
 
 # Firewalld services allowed into the host (distinct from port list).
 rhel_baseline_firewall_services:

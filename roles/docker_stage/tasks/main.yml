@@ -1,0 +1,67 @@
+---
+# Mutex with podman: scanner/sandbox hosts must never co-host podman.
+# Inventory groups enforce this upstream; this assert is belt-and-suspenders
+# so a misclassified host fails loudly before docker is installed.
+- name: Assert podman is not installed (docker / podman mutex)
+  ansible.builtin.command: rpm -q podman
+  register: podman_rpm_check
+  changed_when: false
+  failed_when: podman_rpm_check.rc == 0
+
+- name: Ensure docker install dir
+  ansible.builtin.file:
+    path: "{{ docker_stage_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Stage docker-ce RPMs and sha256 manifests
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ docker_stage_dir }}/{{ item }}"
+    owner: root
+    group: root
+    mode: "0600"
+  loop:
+    - "{{ docker_engine_rpm }}"
+    - "{{ docker_cli_rpm }}"
+    - "{{ docker_containerd_rpm }}"
+    - "{{ docker_engine_rpm }}.sha256"
+    - "{{ docker_cli_rpm }}.sha256"
+    - "{{ docker_containerd_rpm }}.sha256"
+
+- name: Verify RPM integrity
+  ansible.builtin.command: "sha256sum -c {{ item }}.sha256"
+  args:
+    chdir: "{{ docker_stage_dir }}"
+  loop:
+    - "{{ docker_engine_rpm }}"
+    - "{{ docker_cli_rpm }}"
+    - "{{ docker_containerd_rpm }}"
+  register: docker_sha
+  changed_when: false
+  failed_when: "'OK' not in docker_sha.stdout"
+
+# GPG check is disabled because air-gapped operators may or may not stage
+# the docker-ce signing key. SHA-256 verification above is the integrity
+# gate. If the key is staged, an operator can enable full GPG validation
+# by importing it out-of-band and flipping disable_gpg_check to false.
+- name: Install docker-ce from local RPMs
+  ansible.builtin.dnf:
+    name:
+      - "{{ docker_stage_dir }}/{{ docker_containerd_rpm }}"
+      - "{{ docker_stage_dir }}/{{ docker_cli_rpm }}"
+      - "{{ docker_stage_dir }}/{{ docker_engine_rpm }}"
+    state: present
+    disable_gpg_check: true
+
+- name: Assert docker binary present
+  ansible.builtin.command: docker --version
+  register: docker_ver
+  changed_when: false
+
+- name: Assert pinned docker version
+  ansible.builtin.assert:
+    that: docker_ce_version in docker_ver.stdout
+    fail_msg: "docker-ce version mismatch — expected {{ docker_ce_version }}, got: {{ docker_ver.stdout }}"

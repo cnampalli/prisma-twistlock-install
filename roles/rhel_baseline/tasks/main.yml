@@ -10,7 +10,7 @@
 
 - name: Install baseline packages
   ansible.builtin.dnf:
-    name: "{{ rhel_baseline_packages }}"
+    name: "{{ rhel_baseline_packages + rhel_baseline_container_packages }}"
     state: present
   tags: [packages]
 

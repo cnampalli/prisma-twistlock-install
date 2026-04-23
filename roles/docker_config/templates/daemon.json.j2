@@ -1,0 +1,23 @@
+{
+  "_comment": "Managed by Ansible — prisma-twistlock-install / docker_config",
+  "storage-driver": "{{ docker_storage_driver }}",
+  "log-driver": "{{ docker_log_driver }}",
+  "log-opts": {
+    "max-size": "{{ docker_log_size_max }}",
+    "max-file": "{{ docker_log_max_file | string }}"
+  },
+  "live-restore": {{ docker_live_restore | bool | to_json }},
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Soft": {{ docker_nofile_soft }},
+      "Hard": {{ docker_nofile_hard }}
+    },
+    "nproc": {
+      "Name": "nproc",
+      "Soft": {{ docker_nproc_soft }},
+      "Hard": {{ docker_nproc_hard }}
+    }
+  }
+}

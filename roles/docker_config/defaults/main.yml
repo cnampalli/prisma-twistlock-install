@@ -1,0 +1,25 @@
+---
+# daemon.json knobs. Matches the podman_config philosophy: overlay2 storage,
+# journald logging, bounded log volume, generous ulimits, systemd cgroup
+# driver so docker plays nicely with cgroup v2 + systemd unit accounting.
+
+docker_storage_driver: "overlay2"
+docker_log_driver: "journald"
+docker_log_size_max: "100m"         # string; docker parses "100m" etc.
+docker_log_max_file: 3
+
+# ulimits — mirror podman_config defaults for parity with Prisma worker
+# expectations (>=65535 nofile documented; nproc headroom for scan forks).
+docker_nofile_soft: 65535
+docker_nofile_hard: 65535
+docker_nproc_soft: 4096
+docker_nproc_hard: 4096
+
+# live-restore lets the daemon be restarted without killing running
+# containers (useful during patching; scanner / sandbox tolerate it).
+docker_live_restore: true
+
+# systemd override accounting knobs. Memory-limit knobs land in Phase 5
+# (Task 3) — kept absent here so the override is behavior-neutral for now.
+docker_systemd_tasks_max: 8192
+docker_systemd_restart_sec: 5

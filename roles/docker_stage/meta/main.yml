@@ -1,0 +1,9 @@
+---
+# Requires collections: ansible.builtin only. Pinned base in requirements.yml.
+galaxy_info:
+  role_name: docker_stage
+  author: Chaitanya Nampalli
+  description: Stage and install docker-ce RPMs from operator-supplied files (air-gapped)
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

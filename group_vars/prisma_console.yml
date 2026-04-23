@@ -13,6 +13,14 @@ prisma_data_folder: "/var/lib/twistlock"         # bind-mount for the Console's 
 prisma_https_port: 8083
 prisma_comm_port: 8084
 
+# Console host-class overrides for rhel_baseline. Other host classes
+# (scanner, sandbox) use the role defaults (no podman, no inbound ports).
+rhel_baseline_container_packages:
+  - podman
+rhel_baseline_firewall_ports:
+  - "{{ prisma_https_port }}/tcp"
+  - "{{ prisma_comm_port }}/tcp"
+
 # Enable RHEL FIPS mode. Required by the hardening baseline; disabling it
 # skips the fips_enable role and will fail validation in prisma_validate.
 prisma_fips_enabled: true

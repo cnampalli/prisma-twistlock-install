@@ -1,0 +1,10 @@
+---
+- name: Phase 2 — docker-ce runtime (scanner + sandbox)
+  hosts: prisma_scanner:prisma_sandbox
+  gather_facts: true
+  become: true
+  roles:
+    - role: docker_stage
+      tags: [docker_stage]
+    - role: docker_config
+      tags: [docker_config]

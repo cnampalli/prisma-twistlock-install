@@ -26,11 +26,12 @@ The canonical runbook is [`docs/runbook.md`](docs/runbook.md). This repo provide
 │   ├── prisma_scanner.yml
 │   └── prisma_sandbox.yml
 ├── playbooks/
-│   ├── site.yml              # run everything, ordered
-│   ├── 00-baseline.yml       # Phases 2–4
-│   ├── 10-podman.yml         # Phase 5
-│   ├── 20-prisma-stage.yml   # Phases 6–8
-│   └── 30-prisma-ops.yml     # Phase 10
+│   ├── site.yml              # run everything, ordered (console path)
+│   ├── 00-baseline.yml       # Phases 2–4 (console)
+│   ├── 10-podman.yml         # Phase 5 (console)
+│   ├── 11-docker.yml         # docker-ce for scanner + sandbox (standalone)
+│   ├── 20-prisma-stage.yml   # Phases 6–8 (console)
+│   └── 30-prisma-ops.yml     # Phase 10 (console)
 ├── roles/
 │   ├── rhel_baseline/
 │   ├── fips_enable/
@@ -42,7 +43,9 @@ The canonical runbook is [`docs/runbook.md`](docs/runbook.md). This repo provide
 │   ├── prisma_systemd/
 │   ├── prisma_logrotate/
 │   ├── prisma_backup/
-│   └── prisma_monitoring/
+│   ├── prisma_monitoring/
+│   ├── docker_stage/          # scanner + sandbox: stage + install docker-ce RPMs
+│   └── docker_config/         # scanner + sandbox: daemon.json + systemd override
 ├── files/                    # operator-supplied drop-in artefacts (tarball, certs) — gitignored
 └── molecule/default/         # lab scenario: converge + verify
 ```
