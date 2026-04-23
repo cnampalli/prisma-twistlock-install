@@ -6,9 +6,8 @@ Configures the docker-ce daemon on scanner / sandbox hosts: writes
 `/etc/docker/daemon.json` (overlay2 storage, journald logging, ulimits,
 live-restore, systemd cgroup driver) and a matching
 `/etc/systemd/system/docker.service.d/override.conf` (accounting +
-`TasksMax` + restart policy). Enables and starts `docker.service`, then
-smoke-tests with `docker info`. Memory-limit knobs are intentionally
-absent here; they land in Phase 5 alongside the Console's systemd override.
+`TasksMax` + restart policy + `MemoryHigh`/`MemoryMax`/`MemorySwapMax`).
+Enables and starts `docker.service`, then smoke-tests with `docker info`.
 
 ## Variables
 
@@ -23,6 +22,9 @@ absent here; they land in Phase 5 alongside the Console's systemd override.
 | `docker_live_restore` | `true` | Survive daemon restarts. |
 | `docker_systemd_tasks_max` | `8192` | systemd `TasksMax=`. |
 | `docker_systemd_restart_sec` | `5` | systemd `RestartSec=`. |
+| `docker_systemd_memory_high` | `90%` | `MemoryHigh=` on the docker.service slice — soft reclaim trigger for every container launched without its own `--memory` cap. |
+| `docker_systemd_memory_max` | `95%` | `MemoryMax=` on the docker.service slice — hard OOM-kill boundary for the combined container workload. |
+| `docker_systemd_memory_swap_max` | `0` | `MemorySwapMax=0` — no swap for docker-managed containers. |
 
 ## Dependencies
 

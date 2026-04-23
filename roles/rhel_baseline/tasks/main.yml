@@ -92,6 +92,25 @@
   notify: Reload sysctl
   tags: [sysctl]
 
+- name: Install disable-thp systemd unit
+  ansible.builtin.template:
+    src: disable-thp.service.j2
+    dest: /etc/systemd/system/disable-thp.service
+    owner: root
+    group: root
+    mode: "0644"
+  when: rhel_baseline_disable_thp | bool
+  tags: [memory, thp]
+
+- name: Enable and start disable-thp
+  ansible.builtin.systemd:
+    name: disable-thp.service
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: rhel_baseline_disable_thp | bool
+  tags: [memory, thp]
+
 - name: Ensure journald drop-in dir
   ansible.builtin.file:
     path: /etc/systemd/journald.conf.d

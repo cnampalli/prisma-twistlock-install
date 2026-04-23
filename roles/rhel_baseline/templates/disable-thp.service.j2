@@ -1,0 +1,16 @@
+# Managed by Ansible — prisma-twistlock-install / rhel_baseline
+[Unit]
+Description=Disable Transparent Huge Pages (Prisma / MongoDB recommendation)
+DefaultDependencies=no
+After=sysinit.target local-fs.target
+Before=basic.target
+ConditionPathIsReadWrite=/sys/kernel/mm/transparent_hugepage/enabled
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'echo never > /sys/kernel/mm/transparent_hugepage/enabled'
+ExecStart=/bin/sh -c 'echo never > /sys/kernel/mm/transparent_hugepage/defrag'
+
+[Install]
+WantedBy=basic.target

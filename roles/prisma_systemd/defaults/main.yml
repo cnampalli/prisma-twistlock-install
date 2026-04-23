@@ -11,3 +11,18 @@ prisma_systemd_tasks_max: 8192
 # RestartSec — delay before systemd restarts the unit on failure. 10s gives
 # the DB time to flush/close before a fresh Console tries to reopen it.
 prisma_systemd_restart_sec: 10
+
+# Memory enforcement (Task 3). Two-tier cap: MemoryHigh is a soft throttle
+# that forces the cgroup to reclaim when exceeded; MemoryMax is the hard
+# OOM-kill boundary. The gap between 90% and 95% gives MongoDB / Go
+# goroutines room to shed memory before the kernel kills the unit.
+# MemorySwapMax=0 prevents swap from being used as a pressure escape
+# valve — Prisma under swap is effectively dead anyway.
+#
+# Percentages are relative to physical RAM (systemd >=240 resolves the
+# '%' suffix against /proc/meminfo at service start). On an 8 GiB VM
+# that's MemoryHigh=~7.2 GiB, MemoryMax=~7.6 GiB, leaving ~400 MiB for
+# the OS + agents.
+prisma_systemd_memory_high: "90%"
+prisma_systemd_memory_max: "95%"
+prisma_systemd_memory_swap_max: "0"

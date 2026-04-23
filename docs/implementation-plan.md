@@ -128,8 +128,15 @@ Lowest → highest:
    confirmed path.
 4. **Phase 4** — manual `twistcli sandbox` test on a lab sandbox VM,
    then `prisma_sandbox` role + `22-sandbox.yml`.
-5. **Phase 5** — memory enforcement (Task 3) across existing + new
-   roles.
+5. **Phase 5** — memory enforcement (Task 3). Shipped. Three layers:
+   - Sysctl: `vm.overcommit_memory=1`, `vm.dirty_ratio=15`,
+     `vm.dirty_background_ratio=5` (added to `rhel_baseline_sysctl`).
+   - THP: `disable-thp.service` systemd oneshot writes `never` to
+     `/sys/kernel/mm/transparent_hugepage/{enabled,defrag}` at boot.
+   - Cgroup: `MemoryHigh=90%` / `MemoryMax=95%` / `MemorySwapMax=0`
+     on `twistlock.service` (prisma_systemd) and `docker.service`
+     (docker_config). Per-container `--memory` caps still land in
+     Phase 3 / Phase 4 at Defender / sandbox install time.
 6. **Phase 6** — `prisma_restore` + `40-dr-drill.yml`;
    `prisma_backup_dir` default change. Use `twistcli restore` which we
    confirmed exists as a top-level command.

@@ -19,6 +19,9 @@ From `roles/prisma_systemd/defaults/main.yml`:
 | `prisma_systemd_unit` | `twistlock` | Name of the Prisma-created systemd unit; the role overrides rather than replaces it. |
 | `prisma_systemd_tasks_max` | `8192` | `TasksMax=` for the override. Default 4096 blocks new goroutines under heavy Defender fleets. |
 | `prisma_systemd_restart_sec` | `10` | `RestartSec=` so the DB has time to flush before a restart. |
+| `prisma_systemd_memory_high` | `90%` | `MemoryHigh=` — soft reclaim trigger. Percentages resolve against physical RAM (systemd >=240). |
+| `prisma_systemd_memory_max` | `95%` | `MemoryMax=` — hard OOM-kill boundary. Leaves ~5% headroom for the OS. |
+| `prisma_systemd_memory_swap_max` | `0` | `MemorySwapMax=0` — disallow swap as a pressure escape valve. |
 
 ## Dependencies
 

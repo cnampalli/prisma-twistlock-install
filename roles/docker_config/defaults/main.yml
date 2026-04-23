@@ -19,7 +19,19 @@ docker_nproc_hard: 4096
 # containers (useful during patching; scanner / sandbox tolerate it).
 docker_live_restore: true
 
-# systemd override accounting knobs. Memory-limit knobs land in Phase 5
-# (Task 3) — kept absent here so the override is behavior-neutral for now.
+# systemd override accounting knobs + memory enforcement (Task 3).
+# MemoryHigh is a soft reclaim trigger; MemoryMax is the hard OOM-kill
+# boundary. The docker daemon itself is small; the caps govern the
+# *entire* docker.service cgroup, so every container launched without an
+# explicit --memory inherits the slice's ceiling. This is the fleet-wide
+# guarantee that the Defender + any transient sandbox containers together
+# cannot exceed 95% of host RAM.
+#
+# Per-container caps (e.g. `docker run --memory 6g …`) are set at
+# Defender install time or sandbox-detonation time in Phases 3 / 4 and
+# are *additional* to the service-level caps here.
 docker_systemd_tasks_max: 8192
 docker_systemd_restart_sec: 5
+docker_systemd_memory_high: "90%"
+docker_systemd_memory_max: "95%"
+docker_systemd_memory_swap_max: "0"

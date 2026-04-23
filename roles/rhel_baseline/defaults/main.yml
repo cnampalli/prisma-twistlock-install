@@ -38,12 +38,28 @@ rhel_baseline_firewall_services:
 # Kernel tunables required by Prisma Console under load. vm.max_map_count is
 # the container-workload default recommended by Palo Alto. file-max and
 # net.core.somaxconn size the socket tables for concurrent Defender traffic.
+# vm.overcommit_memory=1 is load-bearing for Task 3 (95% memory target): with
+# cgroup MemoryMax set on the unit, we want the kernel to honour the cgroup
+# limit rather than the global overcommit heuristic. dirty_ratio /
+# dirty_background_ratio reduce MongoDB write-amplification spikes that
+# otherwise push resident-set size past the cgroup cap and trigger OOM.
 rhel_baseline_sysctl:
   vm.swappiness: "10"
+  vm.overcommit_memory: "1"
+  vm.dirty_ratio: "15"
+  vm.dirty_background_ratio: "5"
   vm.max_map_count: "262144"
   fs.file-max: "2097152"
   net.core.somaxconn: "1024"
   net.ipv4.tcp_max_syn_backlog: "1024"
+
+# Disable Transparent Huge Pages at boot. MongoDB (embedded in the Prisma
+# Console container) documents THP as a blocker — latency spikes + memory
+# fragmentation against the MemoryMax cap. Palo Alto echoes this recommendation
+# for the scanner / sandbox hosts as well. Implemented as a systemd oneshot
+# rather than a kernel cmdline so the change survives grub regeneration but is
+# reversible per-host if a workload ever needs THP.
+rhel_baseline_disable_thp: true
 
 # journald caps — large enough to retain ~7 days of Console logs between
 # rsyslog ships. Keep-free reserves headroom so journald does not fill /var.
