@@ -1,0 +1,198 @@
+---
+# Safety interlock — operator must explicitly opt in per run. Refusing by
+# default guards against an accidental play targeting the primary host.
+- name: Assert operator has confirmed the drill
+  ansible.builtin.assert:
+    that: prisma_restore_confirmed | bool
+    fail_msg: >-
+      prisma_restore refused: pass -e prisma_restore_confirmed=true and
+      target the secondary host explicitly (e.g.
+      "ansible-playbook playbooks/40-dr-drill.yml --limit prisma-console-dev-dc2
+      -e prisma_restore_confirmed=true"). Primary hosts must NOT be
+      included in the run.
+
+- name: Assert twistlock.service exists on this host
+  ansible.builtin.stat:
+    path: "/etc/systemd/system/{{ prisma_restore_unit }}.service"
+  register: unit_stat
+
+- name: Fail if unit missing (host has never completed Phase 9)
+  ansible.builtin.assert:
+    that: unit_stat.stat.exists
+    fail_msg: >-
+      /etc/systemd/system/{{ prisma_restore_unit }}.service not present —
+      the secondary Console install must be complete before a restore
+      drill. Run runbook Phase 9 on this host first.
+
+- name: Assert twistcli binary is present
+  ansible.builtin.stat:
+    path: "{{ prisma_restore_twistcli }}"
+  register: twistcli_stat
+
+- name: Fail if twistcli missing
+  ansible.builtin.assert:
+    that: twistcli_stat.stat.exists and twistcli_stat.stat.executable
+    fail_msg: >-
+      twistcli not found at {{ prisma_restore_twistcli }}. Run prisma_stage
+      first (or override prisma_restore_twistcli).
+
+# Confirm the NFS mount is actually NFS — a local empty /var/lib/twistlock-backup
+# dir would silently produce "no backup found" and mask a misconfigured
+# secondary. findmnt's FSTYPE column is the source of truth.
+- name: Probe mount type of restore source
+  ansible.builtin.command: "findmnt -n -o FSTYPE {{ prisma_restore_nfs_path }}"
+  register: mount_fstype
+  changed_when: false
+  failed_when: mount_fstype.rc != 0
+
+- name: Assert restore source is NFS-mounted
+  ansible.builtin.assert:
+    that: "'nfs' in mount_fstype.stdout"
+    fail_msg: >-
+      {{ prisma_restore_nfs_path }} is {{ mount_fstype.stdout | trim }},
+      not NFS. The DR drill reads from the NFS mount the primary writes
+      into; aborting to prevent a restore against stale local data.
+
+- name: Pick specific backup file (if operator pinned one)
+  ansible.builtin.set_fact:
+    prisma_restore_backup_file: "{{ prisma_restore_specific_file }}"
+  when: prisma_restore_specific_file | length > 0
+
+- name: Find latest backup tarball
+  ansible.builtin.find:
+    paths: "{{ prisma_restore_nfs_path }}"
+    patterns: "{{ prisma_restore_tarball_glob }}"
+    file_type: file
+  register: backup_find
+  when: prisma_restore_specific_file | length == 0
+
+- name: Resolve latest backup file
+  ansible.builtin.set_fact:
+    prisma_restore_backup_file: "{{ (backup_find.files | sort(attribute='mtime') | last).path }}"
+  when:
+    - prisma_restore_specific_file | length == 0
+    - backup_find.files | length > 0
+
+- name: Fail if no backup file selected
+  ansible.builtin.assert:
+    that: prisma_restore_backup_file is defined and prisma_restore_backup_file | length > 0
+    fail_msg: >-
+      No backup tarball matched {{ prisma_restore_tarball_glob }} under
+      {{ prisma_restore_nfs_path }}. Primary must have pushed at least
+      one backup before a drill is meaningful.
+
+- name: Stat the chosen backup for sizing / report
+  ansible.builtin.stat:
+    path: "{{ prisma_restore_backup_file }}"
+  register: backup_stat
+
+- name: Capture drill start timestamp
+  ansible.builtin.set_fact:
+    prisma_restore_start_ts: "{{ ansible_date_time.iso8601 }}"
+    prisma_restore_report_path: "{{ prisma_restore_report_dir }}/dr-drill-{{ ansible_date_time.iso8601_basic_short }}.log"
+
+- name: Ensure report dir
+  ansible.builtin.file:
+    path: "{{ prisma_restore_report_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Announce selection
+  ansible.builtin.debug:
+    msg:
+      - "DR drill target: {{ inventory_hostname }}"
+      - "Backup file:     {{ prisma_restore_backup_file }}"
+      - "Backup size:     {{ backup_stat.stat.size | human_readable }}"
+      - "Backup mtime:    {{ '%Y-%m-%dT%H:%M:%SZ' | strftime(backup_stat.stat.mtime) }}"
+      - "Dry run:         {{ prisma_restore_dry_run }}"
+
+- name: Dry-run — skip restore
+  when: prisma_restore_dry_run | bool
+  block:
+    - name: Dry-run notice
+      ansible.builtin.debug:
+        msg: "Dry run — skipping stop/restore/start/verify. Pre-flight passed."
+    - name: Write dry-run report
+      ansible.builtin.template:
+        src: dr-drill-report.j2
+        dest: "{{ prisma_restore_report_path }}"
+        owner: root
+        group: root
+        mode: "0640"
+      vars:
+        prisma_restore_outcome: "dry-run — preflight OK, restore skipped"
+        prisma_restore_end_ts: "{{ ansible_date_time.iso8601 }}"
+        prisma_restore_health_status: "not attempted"
+    - name: End of play (dry-run)
+      ansible.builtin.meta: end_host
+
+- name: Stop twistlock.service (secondary)
+  ansible.builtin.systemd:
+    name: "{{ prisma_restore_unit }}"
+    state: stopped
+
+# The flag form below reflects the expected shape of twistcli restore based
+# on v34.01.126's other subcommands. Exact flag names (--address, --user,
+# --password, --backup-file) are to be verified in the Phase 3 manual
+# validation (see docs/manual-validation-guide.md — extend there to cover
+# `twistcli restore --help`). If the shipped flag set differs, override
+# prisma_restore_twistcli_cmd in group_vars and this task wraps it.
+- name: Run twistcli restore
+  ansible.builtin.command:
+    cmd: >-
+      {{ prisma_restore_twistcli }} restore
+      --address {{ prisma_restore_health_url | regex_replace('/api/v1/_ping$', '') }}
+      --backup-file {{ prisma_restore_backup_file }}
+  register: restore_run
+  changed_when: restore_run.rc == 0
+  failed_when: restore_run.rc != 0
+  environment:
+    # Console auth for twistcli. Operator provides via -e at runtime or
+    # via host_vars; do not bake secrets into defaults.
+    PRISMA_USER: "{{ prisma_restore_api_user | default('') }}"
+    PRISMA_PASSWORD: "{{ prisma_restore_api_password | default('') }}"
+
+- name: Start twistlock.service
+  ansible.builtin.systemd:
+    name: "{{ prisma_restore_unit }}"
+    state: started
+
+- name: Wait for Console health
+  ansible.builtin.uri:
+    url: "{{ prisma_restore_health_url }}"
+    method: GET
+    validate_certs: false
+    status_code: 200
+  register: health
+  retries: "{{ prisma_restore_health_retries }}"
+  delay: "{{ prisma_restore_health_delay }}"
+  until: health.status == 200
+  failed_when: false
+
+- name: Capture drill end timestamp
+  ansible.builtin.set_fact:
+    prisma_restore_end_ts: "{{ ansible_date_time.iso8601 }}"
+    prisma_restore_health_status: "{{ 'pass' if (health.status | default(0)) == 200 else 'fail (status=' ~ (health.status | default('none')) ~ ')' }}"
+    prisma_restore_outcome: "{{ 'success' if (health.status | default(0)) == 200 else 'restore ran but health check failed' }}"
+
+- name: Write drill report
+  ansible.builtin.template:
+    src: dr-drill-report.j2
+    dest: "{{ prisma_restore_report_path }}"
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Announce outcome
+  ansible.builtin.debug:
+    msg:
+      - "DR drill outcome: {{ prisma_restore_outcome }}"
+      - "Health check:    {{ prisma_restore_health_status }}"
+      - "Report:           {{ prisma_restore_report_path }}"
+
+- name: Fail the play if health check did not pass
+  ansible.builtin.assert:
+    that: prisma_restore_health_status == "pass"
+    fail_msg: "DR drill: restore ran but Console health check did not reach 200 within {{ prisma_restore_health_retries * prisma_restore_health_delay }}s. See {{ prisma_restore_report_path }}."

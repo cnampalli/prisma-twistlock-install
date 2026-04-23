@@ -1,0 +1,52 @@
+---
+# DR-drill restore role. Restores the local (secondary) Console from a
+# backup tarball sitting on the NFS mount that the primary site pushes
+# into. See docs/implementation-plan.md § Task 2 and
+# docs/fips-feasibility.md § "twistcli findings" — `twistcli restore`
+# is confirmed to exist as a top-level subcommand in v34.01.126.
+
+# Path to search for backup tarballs. Matches prisma_backup_dir by
+# design so the primary's curl-push output lands in the same location
+# the secondary reads from (NFS shared mount).
+prisma_restore_nfs_path: "{{ prisma_backup_dir }}"
+
+# Tarball glob the primary's prisma-backup.sh writes. If your
+# deployment renamed the nightly output, override here.
+prisma_restore_tarball_glob: "prisma-*.tar.gz"
+
+# Selection strategy. "latest" picks the newest by mtime; set
+# prisma_restore_specific_file to a full path to pin a specific run.
+prisma_restore_specific_file: ""
+
+# Hard safety interlock: the role refuses to run unless this is set to
+# true at runtime (e.g. via `-e prisma_restore_confirmed=true`).
+# Prevents an accidental `40-dr-drill.yml` run without --limit from
+# wiping production. Pair with the --limit pattern documented in the
+# role README.
+prisma_restore_confirmed: false
+
+# If true, the role produces the report but skips the actual stop /
+# restore / start / verify sequence. Useful for CI pre-flight
+# verifying the drill *would* succeed given mount + backup presence.
+prisma_restore_dry_run: false
+
+# Path to the twistcli binary on the secondary. Populated by the
+# existing prisma_stage role into {{ prisma_extracted_dir }}/linux/twistcli;
+# symlink or copy it into PATH on the secondary before running the drill.
+prisma_restore_twistcli: "{{ prisma_extracted_dir }}/linux/twistcli"
+
+# Systemd unit name for the local Console. Matches prisma_systemd_unit.
+prisma_restore_unit: "{{ prisma_systemd_unit | default('twistlock') }}"
+
+# Console URL for the post-restore health check — local loopback is
+# safest (TLS cert may not match the secondary's FQDN yet).
+prisma_restore_health_url: "https://localhost:{{ prisma_https_port }}/api/v1/_ping"
+
+# Health-check retry budget. The Console takes time to load MongoDB
+# state from a restored tarball; 30 * 10s = 5 minutes covers typical
+# restore warm-up.
+prisma_restore_health_retries: 30
+prisma_restore_health_delay: 10
+
+# Where to write the drill report. Each run writes a timestamped file.
+prisma_restore_report_dir: "/var/log/prisma-dr"

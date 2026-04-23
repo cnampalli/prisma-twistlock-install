@@ -53,7 +53,7 @@ firewall_allow_operator_cidr: "10.0.0.0/8"
 firewall_allow_defender_cidr: "10.0.0.0/8"
 
 # Backup
-prisma_backup_dir: "/var/backups/prisma"          # local spool before remote upload
+prisma_backup_dir: "/var/lib/twistlock-backup"    # NFS mount shared primary↔secondary; primary writes, secondary reads (DR drill)
 prisma_backup_retention_days: 30                  # find -mtime + -delete threshold
 prisma_backup_user: "prisma-backup"               # service account in Prisma Console
 # Set these via Vault — do NOT commit real values:

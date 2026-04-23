@@ -138,8 +138,13 @@ Lowest → highest:
      (docker_config). Per-container `--memory` caps still land in
      Phase 3 / Phase 4 at Defender / sandbox install time.
 6. **Phase 6** — `prisma_restore` + `40-dr-drill.yml`;
-   `prisma_backup_dir` default change. Use `twistcli restore` which we
-   confirmed exists as a top-level command.
+   `prisma_backup_dir` changed from `/var/backups/prisma` →
+   `/var/lib/twistlock-backup` in `group_vars/prisma_console.yml` +
+   `docs/runbook.md`. Shipped. Uses `twistcli restore`; exact flag
+   shape to be confirmed in Phase 3 manual validation (noted in
+   `roles/prisma_restore/README.md`). Safety interlock
+   (`prisma_restore_confirmed=true`) prevents accidental primary wipe.
+   Operator guide: `docs/dr-drill.md`.
 7. **Phase 7** — manual-install docs + validation guide. Shipped
    independently of Phases 3–6 because docs do not depend on lab
    access:

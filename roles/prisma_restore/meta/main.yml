@@ -1,0 +1,9 @@
+---
+# Requires collections: ansible.builtin only. Pinned base in requirements.yml.
+galaxy_info:
+  role_name: prisma_restore
+  author: Chaitanya Nampalli
+  description: DR drill — restore the secondary Console from an NFS-shared backup tarball and verify health
+  license: internal
+  min_ansible_version: "2.15"
+dependencies: []

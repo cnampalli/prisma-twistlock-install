@@ -1,0 +1,16 @@
+---
+# DR drill — restore the SECONDARY Prisma Console from an NFS-shared
+# backup tarball. Always use --limit to scope this to a secondary host;
+# the role also enforces prisma_restore_confirmed=true as an interlock.
+#
+# Example:
+#   ansible-playbook playbooks/40-dr-drill.yml \
+#     --limit prisma-console-dev-dc2 \
+#     -e prisma_restore_confirmed=true
+- name: DR drill — restore secondary Console from NFS backup
+  hosts: prisma_console
+  gather_facts: true
+  become: true
+  roles:
+    - role: prisma_restore
+      tags: [restore, dr]

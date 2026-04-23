@@ -678,8 +678,8 @@ journald is already capped via `/etc/systemd/journald.conf.d/10-prisma.conf` in 
 #!/usr/bin/env bash
 set -euo pipefail
 ts=$(date -u +%Y%m%dT%H%M%SZ)
-out="/var/backups/prisma/prisma-${ts}.tar.gz"
-mkdir -p /var/backups/prisma
+out="/var/lib/twistlock-backup/prisma-${ts}.tar.gz"
+mkdir -p /var/lib/twistlock-backup
 curl -ks --fail \
   -u "${PRISMA_BACKUP_USER}:${PRISMA_BACKUP_TOKEN}" \
   -o "${out}" \
@@ -687,7 +687,7 @@ curl -ks --fail \
 # Ship to internal artefact store
 curl -ks --fail -T "${out}" "${INTERNAL_BACKUP_URL}/$(basename "${out}")"
 # On-box retention 30 d
-find /var/backups/prisma -type f -mtime +30 -delete
+find /var/lib/twistlock-backup -type f -mtime +30 -delete
 ```
 
 **Credentials**: `/etc/prisma/backup.env` (mode `0600`, owner `root`):
@@ -748,7 +748,7 @@ WantedBy=timers.target
 **Acceptance criteria (Phase 10)**
 - `systemctl is-enabled twistlock prisma-backup.timer` both `enabled`.
 - `logrotate -d /etc/logrotate.d/prisma-console` reports the expected rotations without errors.
-- A manual run of `prisma-backup.sh` produces a tarball in `/var/backups/prisma/` and lands a copy at the internal artefact store.
+- A manual run of `prisma-backup.sh` produces a tarball in `/var/lib/twistlock-backup/` and lands a copy at the internal artefact store.
 - Prometheus scrape target for this host is `UP`.
 - SIEM receives Console journal events within 5 min.
 
@@ -812,7 +812,7 @@ RSS 1–2 GiB; no swap in use; data dir < 5 GiB on day one.
 LDAPS login works, role mapping matches RBAC matrix.
 
 ### 6.5 Backup / restore drill
-Trigger `prisma-backup.service` manually, confirm the tarball lands in `/var/backups/prisma/` and at the internal artefact store. Perform a restore drill in a lab VM (§11.3).
+Trigger `prisma-backup.service` manually, confirm the tarball lands in `/var/lib/twistlock-backup/` and at the internal artefact store. Perform a restore drill in a lab VM (§11.3).
 
 ### 6.6 Sign-off
 Capture all §6.1–§6.5 outputs in the change ticket; obtain DevSecOps SME + Security Engineering Lead signatures before registering Defenders.

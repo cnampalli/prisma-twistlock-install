@@ -29,9 +29,10 @@ The canonical runbook is [`docs/runbook.md`](docs/runbook.md). This repo provide
 │   ├── site.yml              # run everything, ordered (console path)
 │   ├── 00-baseline.yml       # Phases 2–4 (console)
 │   ├── 10-podman.yml         # Phase 5 (console)
-│   ├── 11-docker.yml         # docker-ce for scanner + sandbox (standalone)
+│   ├── 11-docker.yml         # docker-ce for scanner + sandbox
 │   ├── 20-prisma-stage.yml   # Phases 6–8 (console)
-│   └── 30-prisma-ops.yml     # Phase 10 (console)
+│   ├── 30-prisma-ops.yml     # Phase 10 (console)
+│   └── 40-dr-drill.yml       # DR drill — restore secondary from NFS backup
 ├── roles/
 │   ├── rhel_baseline/
 │   ├── fips_enable/
@@ -45,7 +46,8 @@ The canonical runbook is [`docs/runbook.md`](docs/runbook.md). This repo provide
 │   ├── prisma_backup/
 │   ├── prisma_monitoring/
 │   ├── docker_stage/          # scanner + sandbox: stage + install docker-ce RPMs
-│   └── docker_config/         # scanner + sandbox: daemon.json + systemd override
+│   ├── docker_config/         # scanner + sandbox: daemon.json + systemd override
+│   └── prisma_restore/        # DR drill: restore secondary Console from NFS backup
 ├── files/                    # operator-supplied drop-in artefacts (tarball, certs) — gitignored
 └── molecule/default/         # lab scenario: converge + verify
 ```
@@ -77,7 +79,7 @@ Phase 9 (running `./twistlock.sh -s console`) is deliberately **not** wrapped �
 
 ## Tags
 
-`baseline`, `fips`, `storage`, `podman`, `docker_stage`, `docker_config`, `memory`, `thp`, `tls`, `stage`, `config`, `systemd`, `logrotate`, `backup`, `monitoring`.
+`baseline`, `fips`, `storage`, `podman`, `docker_stage`, `docker_config`, `memory`, `thp`, `tls`, `stage`, `config`, `systemd`, `logrotate`, `backup`, `monitoring`, `restore`, `dr`.
 
 ## Verify
 
@@ -98,3 +100,4 @@ cd molecule/default && molecule test
 | [`docs/manual-install/console.md`](docs/manual-install/console.md) | Operator script for building the Console without Ansible. |
 | [`docs/manual-install/image-scanner.md`](docs/manual-install/image-scanner.md) | Operator script for the standalone-Defender scanner VM. |
 | [`docs/manual-install/sandbox.md`](docs/manual-install/sandbox.md) | Operator script for the twistcli sandbox / CI-agent VM. |
+| [`docs/dr-drill.md`](docs/dr-drill.md) | How to invoke `40-dr-drill.yml`, interpret the report, and triage failures. |

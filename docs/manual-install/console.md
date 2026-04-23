@@ -342,7 +342,7 @@ install -d -m 0700 -o root -g root /var/lib/twistlock-backup
 cat >/etc/default/prisma-backup.env <<'EOF'
 PRISMA_BACKUP_TOKEN=<from-vault>
 INTERNAL_BACKUP_URL=https://artefacts.internal/prisma/
-PRISMA_BACKUP_DIR=/var/lib/twistlock-backup
+PRISMA_BACKUP_DIR=/var/lib/twistlock-backup    # NFS mount, shared primary ↔ secondary
 PRISMA_BACKUP_RETENTION_DAYS=30
 CONSOLE_URL=https://localhost:8083
 EOF
