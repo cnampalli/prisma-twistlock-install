@@ -1,0 +1,14 @@
+---
+# Fleet-wide non-secret defaults. Applies to every Prisma host (console,
+# scanner, sandbox) across every environment unless overridden by a more
+# specific group_vars or host_vars file.
+#
+# Precedence (lowest -> highest):
+#   1. role defaults
+#   2. group_vars/all.yml                       (this file)
+#   3. group_vars/prisma_{console,scanner,sandbox}.yml
+#   4. inventory/<env>/group_vars/all.yml
+#   5. inventory/<env>/group_vars/dc{1,2}.yml
+#   6. inventory/<env>/host_vars/<host>.yml
+#
+# Secrets come from Vault / ansible-vault, never from plain YAML.

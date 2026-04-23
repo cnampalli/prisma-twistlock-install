@@ -11,11 +11,20 @@ The canonical runbook is [`docs/runbook.md`](docs/runbook.md). This repo provide
 ├── README.md                 # this file
 ├── docs/runbook.md           # full runbook (Manual vs Ansible tagged per step)
 ├── ansible.cfg
-├── inventory/hosts.yml       # inventory template (populate at runtime)
-├── group_vars/
-│   └── prisma_console.yml    # non-secret defaults
-├── host_vars/
-│   └── prisma-console-01.yml # example host override
+├── inventory/                # directory-per-env (dev populated; others are templates)
+│   ├── dev/
+│   │   ├── hosts.yml         # 2 DCs × 3 VM roles (console, scanner, sandbox)
+│   │   ├── group_vars/       # env-wide + per-DC overrides (all.yml, dc1.yml, dc2.yml)
+│   │   └── host_vars/        # per-host overrides
+│   ├── pre-prod-ht/hosts.yml # commented template
+│   ├── pre-prod-vht/hosts.yml
+│   ├── prod-ht/hosts.yml
+│   └── prod-vht/hosts.yml
+├── group_vars/               # cross-env defaults (applied to every env)
+│   ├── all.yml               # fleet-wide
+│   ├── prisma_console.yml
+│   ├── prisma_scanner.yml
+│   └── prisma_sandbox.yml
 ├── playbooks/
 │   ├── site.yml              # run everything, ordered
 │   ├── 00-baseline.yml       # Phases 2–4
@@ -52,13 +61,13 @@ Secrets (licence key, LDAPS bind password, Prisma backup token, internal backup 
 
 ```bash
 # Full build (matches runbook Phases 2–10)
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml
+ansible-playbook -i inventory/dev/hosts.yml playbooks/site.yml
 
 # Slice — re-run only podman configuration
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags podman
+ansible-playbook -i inventory/dev/hosts.yml playbooks/site.yml --tags podman
 
 # Slice — re-run only the operational layer (systemd/logrotate/backup/monitoring)
-ansible-playbook -i inventory/hosts.yml playbooks/site.yml --tags systemd,logrotate,backup,monitoring
+ansible-playbook -i inventory/dev/hosts.yml playbooks/site.yml --tags systemd,logrotate,backup,monitoring
 ```
 
 Phase 9 (running `./twistlock.sh -s console`) is deliberately **not** wrapped — see runbook §Phase 9.

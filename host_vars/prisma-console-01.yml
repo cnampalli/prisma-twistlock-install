@@ -1,7 +1,0 @@
----
-# Example per-host overrides. Adjust per deployment.
-prisma_console_fqdn: "prisma-console.internal"
-prisma_data_device: "/dev/sdb"
-
-# If your data disk differs (e.g. VMware presents as /dev/nvme0n2):
-# prisma_data_device: "/dev/nvme0n2"

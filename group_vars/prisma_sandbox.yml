@@ -1,0 +1,4 @@
+---
+# Non-secret defaults for Sandbox (CI detonation agent) VMs.
+# Populated in Phase 4 of docs/implementation-plan.md. Kept as a stub in
+# Phase 1 so the prisma_sandbox group resolves cleanly.

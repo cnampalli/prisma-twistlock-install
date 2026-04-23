@@ -1039,12 +1039,17 @@ Proposed repository layout under a new `prisma-twistlock-install` repo (the curr
 prisma-twistlock-install/
 ├── README.md                              # points at this runbook
 ├── ansible.cfg
-├── inventory/
-│   └── hosts.yml                          # populated via Vault lookup at runtime
-├── group_vars/
-│   └── prisma_console.yml                 # non-secret defaults (ports, paths)
-├── host_vars/
-│   └── prisma-console-01.yml              # host-specific overrides
+├── inventory/                             # directory-per-env (dev, pre-prod-ht/vht, prod-ht/vht)
+│   ├── dev/
+│   │   ├── hosts.yml                      # 2 DCs × 3 VM roles
+│   │   ├── group_vars/                    # env-wide + per-DC overrides
+│   │   └── host_vars/                     # per-host overrides
+│   └── <env>/hosts.yml                    # commented template for each non-dev env
+├── group_vars/                            # cross-env defaults (apply to every env)
+│   ├── all.yml
+│   ├── prisma_console.yml
+│   ├── prisma_scanner.yml
+│   └── prisma_sandbox.yml
 ├── playbooks/
 │   ├── 00-baseline.yml                    # Phases 2–4
 │   ├── 10-podman.yml                      # Phase 5
