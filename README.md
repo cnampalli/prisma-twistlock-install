@@ -86,3 +86,15 @@ A Molecule scenario under `molecule/default/` converges a RHEL 8.10 sandbox and 
 ```bash
 cd molecule/default && molecule test
 ```
+
+## Documentation
+
+| Doc | Purpose |
+|---|---|
+| [`docs/runbook.md`](docs/runbook.md) | Canonical runbook for the Console install. Source of truth. |
+| [`docs/implementation-plan.md`](docs/implementation-plan.md) | Multi-env + scanner + sandbox + DR + memory roadmap. Phased rollout. |
+| [`docs/fips-feasibility.md`](docs/fips-feasibility.md) | Kernel / docker-ce / Palo Alto userland FIPS analysis. Known findings + open questions. |
+| [`docs/manual-validation-guide.md`](docs/manual-validation-guide.md) | Phase 3 lab-VM procedure: does `twistcli defender install standalone` hardcode docker? |
+| [`docs/manual-install/console.md`](docs/manual-install/console.md) | Operator script for building the Console without Ansible. |
+| [`docs/manual-install/image-scanner.md`](docs/manual-install/image-scanner.md) | Operator script for the standalone-Defender scanner VM. |
+| [`docs/manual-install/sandbox.md`](docs/manual-install/sandbox.md) | Operator script for the twistcli sandbox / CI-agent VM. |

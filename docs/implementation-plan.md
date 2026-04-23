@@ -133,7 +133,14 @@ Lowest → highest:
 6. **Phase 6** — `prisma_restore` + `40-dr-drill.yml`;
    `prisma_backup_dir` default change. Use `twistcli restore` which we
    confirmed exists as a top-level command.
-7. **Phase 7** — manual-install docs.
+7. **Phase 7** — manual-install docs + validation guide. Shipped
+   independently of Phases 3–6 because docs do not depend on lab
+   access:
+   - `docs/manual-install/console.md`
+   - `docs/manual-install/image-scanner.md`
+   - `docs/manual-install/sandbox.md`
+   - `docs/manual-validation-guide.md` (for the eventual Phase 3
+     runtime-behaviour validation)
 
 ## Verification
 
