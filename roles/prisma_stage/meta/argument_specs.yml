@@ -1,0 +1,14 @@
+---
+argument_specs:
+  main:
+    short_description: "Stage the operator-supplied Prisma tarball, verify its SHA-256, and extract the installer."
+    options:
+      prisma_install_dir:
+        type: str
+        description: "Directory where the tarball is staged and extracted."
+      prisma_tarball_name:
+        type: str
+        description: "Filename of the operator-supplied Prisma tarball under files/."
+      prisma_extracted_dir:
+        type: str
+        description: "Path to the extracted installer directory (holds twistlock.sh)."

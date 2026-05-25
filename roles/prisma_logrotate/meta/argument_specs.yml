@@ -1,0 +1,8 @@
+---
+argument_specs:
+  main:
+    short_description: "Install and syntax-check the logrotate policy for the Console log directory."
+    options:
+      prisma_data_folder:
+        type: str
+        description: "Console persistent-data folder; its log/ subdir is the logrotate target."

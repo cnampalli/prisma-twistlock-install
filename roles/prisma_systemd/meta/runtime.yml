@@ -1,0 +1,4 @@
+---
+# Controller 4.5.x (AAP 2.4) ships ansible-core 2.16; repo floor is 2.15.
+# Range accepts both and excludes 2.17 (deprecation churn).
+requires_ansible: ">=2.15.0,<2.17.0"

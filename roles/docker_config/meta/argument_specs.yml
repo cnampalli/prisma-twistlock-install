@@ -1,0 +1,47 @@
+---
+argument_specs:
+  main:
+    short_description: "Render daemon.json and the docker.service systemd override for scanner/sandbox hosts."
+    options:
+      docker_storage_driver:
+        type: str
+        description: "daemon.json storage driver (overlay2)."
+      docker_log_driver:
+        type: str
+        description: "daemon.json log driver (journald)."
+      docker_log_size_max:
+        type: str
+        description: "Max log size per container; docker-parsed string like '100m'."
+      docker_log_max_file:
+        type: int
+        description: "Number of rotated log files to keep per container."
+      docker_nofile_soft:
+        type: int
+        description: "ulimit nofile soft limit (>=65535 per Prisma docs)."
+      docker_nofile_hard:
+        type: int
+        description: "ulimit nofile hard limit (>=65535 per Prisma docs)."
+      docker_nproc_soft:
+        type: int
+        description: "ulimit nproc soft limit; headroom for scan forks."
+      docker_nproc_hard:
+        type: int
+        description: "ulimit nproc hard limit; headroom for scan forks."
+      docker_live_restore:
+        type: bool
+        description: "Allow daemon restart without killing running containers."
+      docker_systemd_tasks_max:
+        type: int
+        description: "TasksMax for the docker.service systemd slice."
+      docker_systemd_restart_sec:
+        type: int
+        description: "RestartSec delay before systemd restarts docker.service."
+      docker_systemd_memory_high:
+        type: str
+        description: "Soft memory reclaim trigger for docker.service cgroup (e.g. '90%')."
+      docker_systemd_memory_max:
+        type: str
+        description: "Hard OOM-kill boundary for docker.service cgroup (e.g. '95%')."
+      docker_systemd_memory_swap_max:
+        type: str
+        description: "Swap ceiling for docker.service cgroup ('0' disables swap)."

@@ -1,0 +1,44 @@
+---
+argument_specs:
+  main:
+    short_description: "Install the nightly Prisma Console backup script, env file, and systemd timer."
+    options:
+      prisma_backup_schedule:
+        type: str
+        description: "systemd OnCalendar schedule for the backup timer."
+      prisma_backup_jitter_sec:
+        type: int
+        description: "Randomised delay (RandomizedDelaySec) for the backup timer."
+      prisma_backup_script:
+        type: str
+        description: "Path to the installed backup shell script."
+      prisma_backup_env_file:
+        type: str
+        description: "Path to the backup environment file consumed by the script."
+      prisma_backup_insecure_tls:
+        type: bool
+        description: "Skip TLS verification for curl calls in the backup script (lab rings only)."
+      prisma_backup_ca_bundle:
+        type: str
+        description: "CA bundle passed to curl --cacert when TLS verification is on."
+      prisma_backup_dir:
+        type: str
+        description: "Backup output directory (NFS mount shared primary/secondary)."
+      prisma_backup_retention_days:
+        type: int
+        description: "Retention threshold for find -mtime cleanup of old backups."
+      prisma_backup_user:
+        type: str
+        description: "Prisma Console service account used by the backup API call."
+      prisma_https_port:
+        type: int
+        description: "Console HTTPS UI/API port targeted by the backup script."
+      prisma_console_fqdn:
+        type: str
+        description: "Console FQDN used to build the backup API URL (defaults to localhost)."
+      internal_backup_url:
+        type: str
+        description: "Internal artefact URL the backup is pushed to; injected by the Prisma Backup credential."
+      prisma_backup_token:
+        type: str
+        description: "API token for the backup call; injected by the Prisma Backup credential, never committed."

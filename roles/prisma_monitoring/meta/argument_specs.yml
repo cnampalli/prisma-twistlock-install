@@ -1,0 +1,32 @@
+---
+argument_specs:
+  main:
+    short_description: "Install node_exporter (integrity-verified) and configure rsyslog shipping to the SIEM."
+    options:
+      node_exporter_user:
+        type: str
+        description: "System account that runs node_exporter."
+      node_exporter_bin:
+        type: str
+        description: "Installed path of the node_exporter binary."
+      node_exporter_tarball:
+        type: str
+        description: "Filename of the node_exporter tarball staged under files/."
+      node_exporter_sha256:
+        type: str
+        description: "SHA-256 hex digest of the tarball; refused if empty or mismatched."
+      node_exporter_version:
+        type: str
+        description: "node_exporter version, must match the operator-supplied tarball."
+      node_exporter_port:
+        type: int
+        description: "node_exporter listen port exposed via firewalld."
+      siem_server:
+        type: str
+        description: "rsyslog destination host for Console logs."
+      siem_port:
+        type: int
+        description: "rsyslog destination port (UDP syslog by convention)."
+      prisma_data_folder:
+        type: str
+        description: "Console persistent-data folder whose logs are shipped."

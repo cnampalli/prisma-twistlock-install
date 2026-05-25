@@ -1,0 +1,26 @@
+---
+argument_specs:
+  main:
+    short_description: "Stage operator TLS cert/key/CA into the PKI dir and verify cert-key match and CA chain."
+    options:
+      prisma_pki_dir:
+        type: str
+        description: "Directory the Console TLS materials are staged into."
+      prisma_cert_src:
+        type: str
+        description: "Source filename of the Console certificate under files/."
+      prisma_key_src:
+        type: str
+        description: "Source filename of the Console private key under files/."
+      prisma_ca_chain_src:
+        type: str
+        description: "Source filename of the CA chain under files/."
+      prisma_cert_path:
+        type: str
+        description: "Destination path for the staged Console certificate."
+      prisma_cert_key_path:
+        type: str
+        description: "Destination path for the staged Console private key."
+      prisma_cert_ca_path:
+        type: str
+        description: "Destination path for the staged CA chain."

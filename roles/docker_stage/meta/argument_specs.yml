@@ -1,0 +1,26 @@
+---
+argument_specs:
+  main:
+    short_description: "Install the pinned docker-ce RPM stack from operator files on scanner/sandbox hosts."
+    options:
+      docker_ce_version:
+        type: str
+        description: "Pinned docker-ce engine version."
+      docker_cli_version:
+        type: str
+        description: "Pinned docker-ce-cli version."
+      docker_containerd_version:
+        type: str
+        description: "Pinned containerd.io version."
+      docker_engine_rpm:
+        type: str
+        description: "Filename of the docker-ce engine RPM staged under files/."
+      docker_cli_rpm:
+        type: str
+        description: "Filename of the docker-ce-cli RPM staged under files/."
+      docker_containerd_rpm:
+        type: str
+        description: "Filename of the containerd.io RPM staged under files/."
+      docker_stage_dir:
+        type: str
+        description: "Staging directory on the target host for the docker RPMs."
