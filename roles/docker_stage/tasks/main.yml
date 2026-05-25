@@ -3,7 +3,7 @@
 # Inventory groups enforce this upstream; this assert is belt-and-suspenders
 # so a misclassified host fails loudly before docker is installed.
 - name: Assert podman is not installed (docker / podman mutex)
-  ansible.builtin.command: rpm -q podman
+  ansible.builtin.command: rpm -q podman  # noqa: command-instead-of-module
   register: podman_rpm_check
   changed_when: false
   failed_when: podman_rpm_check.rc == 0

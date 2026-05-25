@@ -41,7 +41,9 @@
     daemon_reload: true
 
 - name: Smoke test docker config
-  ansible.builtin.command: docker info --format '{% raw %}{{.Driver}} {{.CgroupDriver}} {{.SecurityOptions}}{% endraw %}'
+  ansible.builtin.command: >-
+    docker info --format
+    '{% raw %}{{.Driver}} {{.CgroupDriver}} {{.SecurityOptions}}{% endraw %}'
   register: docker_info
   changed_when: false
 
