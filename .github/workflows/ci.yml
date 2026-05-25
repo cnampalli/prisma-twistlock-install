@@ -17,7 +17,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
+          # No pip cache: deps are installed inline below, and setup-python's
+          # cache:pip errors when there's no requirements.txt/pyproject.toml.
 
       - name: Install linters
         run: |
@@ -44,7 +45,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: pip
+          # No pip cache: deps are installed inline below, and setup-python's
+          # cache:pip errors when there's no requirements.txt/pyproject.toml.
 
       - name: Install molecule + deps
         run: |
