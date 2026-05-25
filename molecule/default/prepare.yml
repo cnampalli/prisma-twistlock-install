@@ -1,0 +1,48 @@
+---
+# Fixture: stand in for the platform/DC team. prisma_storage is now verify-only
+# (it asserts the data volume is mounted and labels it), so the lab must provide
+# the mounted volume before converge — exactly as the DC team does in production.
+- name: Prepare — provision the data volume the DC team would hand over
+  hosts: all
+  gather_facts: true
+  become: true
+  vars:
+    fixture_data_device: /dev/sdb
+    fixture_vg: vg_twistlock
+    fixture_lv: lv_data
+    fixture_fs_label: twistlock
+    prisma_data_folder: /var/lib/twistlock
+  tasks:
+    - name: Create volume group on the data device
+      community.general.lvg:
+        vg: "{{ fixture_vg }}"
+        pvs: "{{ fixture_data_device }}"
+
+    - name: Create logical volume
+      community.general.lvol:
+        vg: "{{ fixture_vg }}"
+        lv: "{{ fixture_lv }}"
+        size: 100%FREE
+        shrink: false
+
+    - name: Format XFS on the logical volume
+      community.general.filesystem:
+        fstype: xfs
+        dev: "/dev/{{ fixture_vg }}/{{ fixture_lv }}"
+        opts: "-L {{ fixture_fs_label }}"
+
+    - name: Ensure the data folder exists
+      ansible.builtin.file:
+        path: "{{ prisma_data_folder }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
+    - name: Mount and persist the data volume
+      ansible.posix.mount:
+        path: "{{ prisma_data_folder }}"
+        src: "/dev/{{ fixture_vg }}/{{ fixture_lv }}"
+        fstype: xfs
+        opts: "defaults,noatime,inode64"
+        state: mounted
