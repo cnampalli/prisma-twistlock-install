@@ -1,0 +1,21 @@
+---
+# Functional survey for the prisma-30-ops job template. Supplies the two backup
+# vars the prisma_backup role consumes when it templates /etc/prisma/backup.env.
+# Used INSTEAD OF a custom "Prisma Backup" credential type, because creating
+# credential types needs Controller superuser; surveys do not. prisma-30-ops is
+# operator-launched, so the password prompts at launch (no stored default).
+survey_ops_backup:
+  name: "Prisma backup secrets"
+  description: "Console backup service-account token + internal artefact store URL (prisma_backup role)."
+  spec:
+    - question_name: "Console backup service-account token"
+      question_description: "Console API token for the backup service account (written to backup.env)."
+      variable: prisma_backup_token
+      type: password
+      required: true
+    - question_name: "Internal artefact store base URL"
+      question_description: "http(s):// endpoint the nightly backup PUTs the tarball to."
+      variable: internal_backup_url
+      type: text
+      default: "https://artefacts.internal/prisma/"
+      required: true
