@@ -833,6 +833,9 @@ Capture all §6.1–§6.5 outputs in the change ticket; obtain DevSecOps SME + S
 | Phase 10–11 fails | Preserve the VM, fix forward. |
 
 ### 7.2 Uninstall
+
+Quick reference below. For a full host teardown (services, podman, systemd units, config, optional LVM/firewall) and a clean re-install, see [`docs/uninstall-prisma-console.md`](uninstall-prisma-console.md).
+
 ```bash
 # [M]
 systemctl stop twistlock prisma-backup.timer
