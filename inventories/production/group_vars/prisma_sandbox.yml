@@ -1,0 +1,3 @@
+---
+# Non-secret defaults for Sandbox (CI detonation agent) VMs in production.
+# docker-ce host class (mutex with podman). Stub until Phase 4 sandbox work.

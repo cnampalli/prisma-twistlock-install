@@ -1,4 +1,0 @@
----
-# Dev / DC1 overrides. Stub for Phase 1.
-# Populate with dc-local values in later phases (NFS server, backup URL,
-# firewall CIDRs that differ between sites).

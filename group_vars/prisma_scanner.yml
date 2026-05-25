@@ -1,4 +1,0 @@
----
-# Non-secret defaults for Image Scanner (Prisma Defender) VMs.
-# Populated in Phase 3 of docs/implementation-plan.md. Kept as a stub in
-# Phase 1 so the prisma_scanner group resolves cleanly.

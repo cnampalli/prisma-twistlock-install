@@ -1,0 +1,9 @@
+---
+# Site layer (secondary = DR restore target). 40-dr-drill.yml targets
+# `prisma_console:&secondary` and is gated by `prisma_restore_confirmed`.
+# ansible_group_priority makes these vars win ties against the prisma_* groups.
+ansible_group_priority: 10
+
+is_dr_target: true
+
+# firewall_allow_operator_cidr: "10.40.2.0/24"
