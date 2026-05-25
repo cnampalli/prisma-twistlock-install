@@ -1,0 +1,12 @@
+---
+# Site layer (primary = live site). ansible_group_priority makes these vars win
+# ties against the role-class groups (prisma_*): the bare name 'primary' sorts
+# alphabetically below 'prisma_*', so without the bump role-class vars would
+# take precedence over site vars — the opposite of intent.
+ansible_group_priority: 10
+
+# Primary is NOT the DR restore target.
+is_dr_target: false
+
+# Site-local firewall ranges can differ between sites — override here if so:
+# firewall_allow_operator_cidr: "10.40.1.0/24"

@@ -1,0 +1,3 @@
+---
+# Non-secret defaults for Image Scanner (Prisma Defender) VMs in preproduction.
+# docker-ce host class (mutex with podman). Stub until Phase 3 Defender work.

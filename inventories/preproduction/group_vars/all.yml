@@ -1,0 +1,20 @@
+---
+# Preproduction — env-wide non-secret defaults. Applies to every Prisma host
+# (console, scanner, sandbox) in this environment unless overridden by a more
+# specific group_vars or host_vars file.
+#
+# Precedence (lowest -> highest):
+#   1. role defaults/main.yml
+#   2. inventories/preproduction/group_vars/all.yml                  (this file)
+#   3. inventories/preproduction/group_vars/prisma_all.yml
+#   4. inventories/preproduction/group_vars/prisma_{console,scanner,sandbox}.yml
+#   5. inventories/preproduction/group_vars/{primary,secondary}.yml  (ansible_group_priority: 10)
+#   6. inventories/preproduction/host_vars/<host>.yml
+#
+# Secrets are injected at job launch by AAP Controller credentials — never
+# committed here. For local CLI runs, pass `-e @local-secrets.yml` (gitignored).
+
+# Auto-discover the Python interpreter when launched from an AAP execution
+# environment (RHEL 9 base). The RHEL 8 control-node CLI default
+# (/usr/libexec/platform-python) stays pinned in ansible.cfg.
+ansible_python_interpreter: auto_silent
