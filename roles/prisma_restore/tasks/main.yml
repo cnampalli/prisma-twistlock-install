@@ -89,7 +89,8 @@
 - name: Capture drill start timestamp
   ansible.builtin.set_fact:
     prisma_restore_start_ts: "{{ ansible_date_time.iso8601 }}"
-    prisma_restore_report_path: "{{ prisma_restore_report_dir }}/dr-drill-{{ ansible_date_time.iso8601_basic_short }}.log"
+    prisma_restore_report_path: >-
+      {{ prisma_restore_report_dir }}/dr-drill-{{ ansible_date_time.iso8601_basic_short }}.log
 
 - name: Ensure report dir
   ansible.builtin.file:
@@ -174,8 +175,12 @@
 - name: Capture drill end timestamp
   ansible.builtin.set_fact:
     prisma_restore_end_ts: "{{ ansible_date_time.iso8601 }}"
-    prisma_restore_health_status: "{{ 'pass' if (health.status | default(0)) == 200 else 'fail (status=' ~ (health.status | default('none')) ~ ')' }}"
-    prisma_restore_outcome: "{{ 'success' if (health.status | default(0)) == 200 else 'restore ran but health check failed' }}"
+    prisma_restore_health_status: >-
+      {{ 'pass' if (health.status | default(0)) == 200
+      else 'fail (status=' ~ (health.status | default('none')) ~ ')' }}
+    prisma_restore_outcome: >-
+      {{ 'success' if (health.status | default(0)) == 200
+      else 'restore ran but health check failed' }}
 
 - name: Write drill report
   ansible.builtin.template:
@@ -195,4 +200,7 @@
 - name: Fail the play if health check did not pass
   ansible.builtin.assert:
     that: prisma_restore_health_status == "pass"
-    fail_msg: "DR drill: restore ran but Console health check did not reach 200 within {{ prisma_restore_health_retries * prisma_restore_health_delay }}s. See {{ prisma_restore_report_path }}."
+    fail_msg: >-
+      DR drill: restore ran but Console health check did not reach 200 within
+      {{ prisma_restore_health_retries * prisma_restore_health_delay }}s.
+      See {{ prisma_restore_report_path }}.
