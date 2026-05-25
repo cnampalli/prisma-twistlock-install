@@ -38,6 +38,9 @@ provisioner:
         rhel_baseline_firewall_ports:
           - "8083/tcp"
           - "8084/tcp"
+        # Data mount point. prepare.yml provisions+mounts it here (standing in
+        # for the DC team); the verify-only prisma_storage role asserts it.
+        prisma_data_folder: /var/lib/twistlock
         # Public NTP in the lab VM where internal NTP is unreachable.
         ntp_servers:
           - pool.ntp.org
