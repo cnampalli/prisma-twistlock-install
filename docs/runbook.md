@@ -45,7 +45,7 @@ Provide a step-by-step, copy-pasteable procedure that a single operator can foll
 ### 1.2 In scope
 - Full OS baseline: FIPS kernel, SELinux, firewalld, chrony, sshd.
 - Podman install and configuration: `registries.conf`, `storage.conf`, `containers.conf`, cgroup v2, journald limits.
-- Storage: LVM + XFS data volume, SELinux labelling.
+- Storage: verify the DC-provided data volume is mounted; SELinux labelling.
 - Prisma Console (onebox) install with `FIPS_ENABLED=true`, CA-signed TLS.
 - systemd unit hardening, log rotation, nightly backup, monitoring exporter.
 - Ansible role skeleton covering every automatable step.
@@ -173,13 +173,13 @@ This phase is manual — it depends on vSphere clicks or a Terraform workflow th
    - Disk 1 (OS): 80 GiB, thick, eager-zeroed, local SSD.
    - Disk 2 (data): 500 GiB, thick, eager-zeroed, local SSD.
    - NIC on the security-tools VLAN.
-2. Boot RHEL 8.10 minimal-server install, use only Disk 1 for the OS volume group, leave Disk 2 untouched.
+2. Boot RHEL 8.10 minimal-server install, use only Disk 1 for the OS volume group. The platform/DC team provisions Disk 2 as the Console data volume and mounts it at `/var/lib/twistlock` (XFS, not NFS) before handover.
 3. Set hostname to the planned Console FQDN.
 4. Register to internal Satellite (or configure offline dnf repo), `dnf -y update`, reboot.
 
 **Acceptance criteria (Phase 1)**
 - `hostnamectl` returns the correct FQDN.
-- `lsblk` shows `sda` (80 GiB, used) and `sdb` (500 GiB, unpartitioned).
+- `lsblk` shows `sda` (80 GiB, used) and the 500 GiB data volume mounted at `/var/lib/twistlock`; `findmnt /var/lib/twistlock` confirms XFS, not NFS.
 - `cat /etc/redhat-release` == `Red Hat Enterprise Linux release 8.10 (Ootpa)`.
 - SSH key for the Ansible control node is installed at `/root/.ssh/authorized_keys` (or a dedicated sudo user).
 
@@ -289,36 +289,27 @@ journalctl --disk-usage
 
 ---
 
-### Phase 4 — Storage: data volume under LVM + XFS + SELinux `[A]`
+### Phase 4 — Storage: verify the data volume + SELinux label `[A]`
 
-**Objective:** prepare `/var/lib/twistlock` on the 500 GiB data disk.
+**Objective:** confirm `/var/lib/twistlock` is the mounted data volume and
+label it for podman. The platform/DC team provisions and mounts the volume
+(XFS, not NFS) at handover — see Phase 1 — so Ansible no longer creates the
+VG/LV/filesystem/mount; it verifies them and applies the SELinux context.
 
 **What Ansible does** (role: `prisma_storage`)
 ```yaml
-- name: Create PV on data disk
-  community.general.lvg:
-    vg: vg_twistlock
-    pvs: /dev/sdb
+- name: Check whether the data folder is a mountpoint
+  ansible.builtin.command: findmnt -n -o FSTYPE,OPTIONS,SOURCE /var/lib/twistlock
+  register: data_mount
+  changed_when: false
+  failed_when: false
 
-- name: Create LV
-  community.general.lvol:
-    vg: vg_twistlock
-    lv: lv_data
-    size: 100%FREE
-
-- name: Format XFS
-  community.general.filesystem:
-    fstype: xfs
-    dev: /dev/vg_twistlock/lv_data
-    opts: "-L twistlock"
-
-- name: Mount and persist
-  ansible.posix.mount:
-    path: /var/lib/twistlock
-    src: /dev/vg_twistlock/lv_data
-    fstype: xfs
-    opts: defaults,noatime,inode64
-    state: mounted
+- name: Assert the data folder is a dedicated XFS mount, not NFS
+  ansible.builtin.assert:
+    that:
+      - data_mount.rc == 0
+      - "'xfs' in data_mount.stdout"
+      - "'nfs' not in data_mount.stdout"
 
 - name: SELinux fcontext for data dir
   community.general.sefcontext:
@@ -336,11 +327,14 @@ journalctl --disk-usage
 # [M]
 df -hT /var/lib/twistlock
 ls -Zd /var/lib/twistlock
-findmnt /var/lib/twistlock    # confirm xfs, noatime, and NOT nfs
+findmnt /var/lib/twistlock    # confirm xfs and NOT nfs
 ```
 
 **Acceptance criteria (Phase 4)**
-- Mount is XFS, ~500 GiB, `noatime`, context `container_file_t`, NOT NFS.
+- `/var/lib/twistlock` is a dedicated XFS mount (provided by the DC team),
+  NOT NFS, labelled `container_file_t`. Mount creation, sizing, and options
+  (`noatime`/`inode64`) are the platform team's responsibility and are no
+  longer asserted by the role.
 
 ---
 
@@ -1022,7 +1016,7 @@ Must be confirmed against shipped tarball files during Phase 7:
 | 1. VM provisioning | vSphere / Terraform | `[M]` (or site-specific automation) |
 | 2. FIPS kernel enable | `fips-mode-setup --enable` + reboot | `[A/M]` |
 | 3. Host hardening | packages, SELinux, firewalld, chrony, sshd, sysctl, journald | `[A]` |
-| 4. Storage | LVM + XFS + mount + SELinux label | `[A]` |
+| 4. Storage | verify data volume mounted (XFS) + SELinux label | `[A]` |
 | 5. Podman config | registries/storage/containers.conf, socket masked | `[A]` |
 | 6. TLS staging | copy cert/key/CA, perms, SELinux | `[A]` |
 | 7. Stage tarball | copy, SHA-256 verify, extract | `[A/M]` (manual reconciliation) |

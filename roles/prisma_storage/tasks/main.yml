@@ -1,49 +1,27 @@
 ---
-- name: Assert data device is present
-  ansible.builtin.stat:
-    path: "{{ prisma_data_device }}"
-  register: data_dev
+# The platform/DC team provisions and mounts the Console data volume at
+# {{ prisma_data_folder }} before handover. This role does NOT create the
+# VG/LV/filesystem/mount — it only verifies the mount is present and applies
+# the SELinux container label that rootful podman bind-mounts require.
 
-- name: Fail if data device missing
-  ansible.builtin.fail:
-    msg: |
-      Expected data device {{ prisma_data_device }} not present on {{ inventory_hostname }}.
-      Check vSphere hardware or adjust prisma_data_device per host.
-  when: not data_dev.stat.exists
+- name: Check whether the data folder is a mountpoint
+  ansible.builtin.command: "findmnt -n -o FSTYPE,OPTIONS,SOURCE {{ prisma_data_folder }}"
+  register: data_mount
+  changed_when: false
+  failed_when: false
 
-- name: Create volume group on data device
-  community.general.lvg:
-    vg: "{{ prisma_vg_name }}"
-    pvs: "{{ prisma_data_device }}"
-
-- name: Create logical volume
-  community.general.lvol:
-    vg: "{{ prisma_vg_name }}"
-    lv: "{{ prisma_lv_name }}"
-    size: 100%FREE
-    shrink: false
-
-- name: Format XFS on logical volume
-  community.general.filesystem:
-    fstype: xfs
-    dev: "/dev/{{ prisma_vg_name }}/{{ prisma_lv_name }}"
-    opts: "-L {{ prisma_fs_label }}"
-
-- name: Ensure data folder exists
-  ansible.builtin.file:
-    path: "{{ prisma_data_folder }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0750"
-
-- name: Mount and persist data volume
-  ansible.posix.mount:
-    path: "{{ prisma_data_folder }}"
-    src: "/dev/{{ prisma_vg_name }}/{{ prisma_lv_name }}"
-    fstype: xfs
-    opts: "defaults,noatime,inode64"
-    state: mounted
+- name: Assert the data folder is a dedicated XFS mount, not NFS
+  ansible.builtin.assert:
+    that:
+      - data_mount.rc == 0
+      - "'xfs' in data_mount.stdout"
+      - "'nfs' not in data_mount.stdout"
+    fail_msg: >-
+      {{ prisma_data_folder }} must be a dedicated XFS mount provisioned by the
+      platform/DC team before handover (findmnt rc={{ data_mount.rc }},
+      output: '{{ data_mount.stdout }}'). Ask them to attach, format XFS, and
+      mount the Console data volume at {{ prisma_data_folder }}.
+    success_msg: "{{ prisma_data_folder }} is mounted XFS: {{ data_mount.stdout }}"
 
 - name: Register SELinux fcontext for data folder
   community.general.sefcontext:
@@ -54,18 +32,3 @@
 - name: Apply SELinux labels
   ansible.builtin.command: "restorecon -R {{ prisma_data_folder }}"
   changed_when: false
-
-- name: Assert mount is XFS, not NFS, correct label
-  block:
-    - name: Read mount details
-      ansible.builtin.command: "findmnt -n -o FSTYPE,OPTIONS,SOURCE {{ prisma_data_folder }}"
-      register: mount_info
-      changed_when: false
-
-    - name: Assert mount properties
-      ansible.builtin.assert:
-        that:
-          - "'xfs' in mount_info.stdout"
-          - "'noatime' in mount_info.stdout"
-          - "'nfs' not in mount_info.stdout"
-        fail_msg: "Data dir mount failed expected properties: {{ mount_info.stdout }}"

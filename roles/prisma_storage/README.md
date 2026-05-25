@@ -2,12 +2,17 @@
 
 ## Purpose
 
-Builds the Console's persistent data volume: a single-PV volume group on
-`prisma_data_device`, a 100%FREE logical volume, XFS filesystem labelled
-`prisma_fs_label`, mounted at `prisma_data_folder` with
-`defaults,noatime,inode64`, and SELinux-labelled `container_file_t` for
-podman bind-mount. Runs last in Phase 4 (`playbooks/00-baseline.yml`),
-after `rhel_baseline` and `fips_enable`.
+Verifies the Console's persistent data volume is in place and labels it for
+podman. The platform/DC team provisions and mounts the data volume at
+`prisma_data_folder` **before VM handover**; this role does not create the
+volume group, logical volume, filesystem, or mount. It:
+
+1. Asserts `prisma_data_folder` is a dedicated XFS mount (not NFS) via `findmnt`.
+2. Registers the `container_file_t` SELinux fcontext and relabels the path so
+   rootful podman can bind-mount it.
+
+Runs last in Phase 4 (`playbooks/00-baseline.yml`), after `rhel_baseline` and
+`fips_enable`.
 
 ## Variables
 
@@ -16,32 +21,24 @@ This role has no `defaults/main.yml`. It consumes, from
 
 | Variable | Default | Description |
 |---|---|---|
-| `prisma_data_device` | `/dev/sdb` | Block device dedicated to Console data. Confirm per host — role fails if missing. |
-| `prisma_vg_name` | `vg_twistlock` | LVM volume group name. |
-| `prisma_lv_name` | `lv_data` | LVM logical volume name (100%FREE of VG). |
-| `prisma_fs_label` | `twistlock` | XFS filesystem label. |
-| `prisma_data_folder` | `/var/lib/twistlock` | Mount point and Console bind-mount target. |
+| `prisma_data_folder` | `/var/lib/twistlock` | Mount point the DC team provisions; the role asserts it is a dedicated XFS mount and labels it `container_file_t`. |
 
 ## Dependencies
 
 - **Ansible collections:**
-  - `ansible.posix` — `mount` module.
-  - `community.general` — `lvg`, `lvol`, `filesystem`, `sefcontext` modules.
-- **Role order:** must run after `rhel_baseline` (installs `lvm2`, `xfsprogs`,
-  `policycoreutils-python-utils`) and before `prisma_stage` (the installer
-  tarball is staged outside the data folder but the Console needs the mount
-  present before first start).
-- **Operator artefacts:** a dedicated data disk attached at
-  `prisma_data_device` (e.g. a VMware virtual disk). No partition table is
-  created — the raw device is consumed as the PV.
+  - `community.general` — `sefcontext` module.
+- **Role order:** must run after `rhel_baseline` (installs
+  `policycoreutils-python-utils` for `restorecon`/`sefcontext`) and before
+  `prisma_stage` — the Console needs the data mount present before first start.
+- **Operator / platform prerequisite:** the data volume must already be mounted
+  at `prisma_data_folder` as XFS (not NFS) when the role runs. The role fails
+  fast with remediation guidance if it is missing.
 
 ## Example usage
 
 ```yaml
 - hosts: prisma_console
   become: true
-  vars:
-    prisma_data_device: /dev/sdb
   roles:
     - role: prisma_storage
       tags: [storage]

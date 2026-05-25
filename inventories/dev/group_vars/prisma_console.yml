@@ -36,12 +36,10 @@ prisma_cert_path: "{{ prisma_pki_dir }}/console.crt"
 prisma_cert_key_path: "{{ prisma_pki_dir }}/console.key"
 prisma_cert_ca_path: "{{ prisma_pki_dir }}/ca-chain.crt"
 
-# Storage — data disk device (confirm per host). prisma_storage builds a
-# single-LV VG on this device and mounts it at {{ prisma_data_folder }}.
-prisma_data_device: "/dev/sdb"
-prisma_vg_name: "vg_twistlock"
-prisma_lv_name: "lv_data"
-prisma_fs_label: "twistlock"
+# Storage — the platform/DC team provisions and mounts the Console data
+# volume at {{ prisma_data_folder }} (XFS, not NFS) before handover.
+# prisma_storage only verifies the mount and applies the SELinux container
+# label; it no longer creates the VG/LV/filesystem/mount.
 
 # NTP sources (internal). Prisma requires time sync within 30s of Defenders.
 ntp_servers:

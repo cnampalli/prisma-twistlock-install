@@ -1,3 +1,2 @@
 ---
 prisma_console_fqdn: "prisma-console-preprod-secondary.internal"
-prisma_data_device: "/dev/sdb"
