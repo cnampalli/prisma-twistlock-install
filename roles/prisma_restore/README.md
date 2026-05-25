@@ -39,7 +39,7 @@ From `roles/prisma_restore/defaults/main.yml`:
 | `prisma_restore_health_delay` | `10` | Health-check retry delay in seconds. |
 | `prisma_restore_report_dir` | `/var/log/prisma-dr` | Where drill reports land. |
 | `prisma_restore_api_user` | `""` | Console API user (env var to twistcli). Operator supplies via `-e` or `host_vars`. |
-| `prisma_restore_api_password` | `""` | Console API password. Vault-only; never plaintext. |
+| `prisma_restore_api_password` | `""` | Console API password. Injected by the "Prisma Restore API" Controller credential; never plaintext. |
 
 ## Dependencies
 
@@ -74,17 +74,17 @@ should be part of the extended Phase 3 validation checklist in
 ## Example usage
 
 ```bash
-# Scoped to the secondary host; interlock explicitly set.
+# The play self-limits to secondary consoles (hosts: prisma_console:&secondary).
+# Under AAP the "Prisma Restore API" credential injects the API creds; for a
+# local CLI run pass them via a gitignored file (-e @local-secrets.yml).
 ansible-playbook playbooks/40-dr-drill.yml \
-  --limit prisma-console-dev-dc2 \
+  -i inventories/dev/hosts.yml \
   -e prisma_restore_confirmed=true \
-  -e prisma_restore_api_user=drill \
-  -e prisma_restore_api_password=@/root/.drill-token \
-  --vault-password-file /etc/ansible/vault-pass
+  -e @local-secrets.yml
 
 # Dry-run — verify pre-flight + backup selection but skip restore.
 ansible-playbook playbooks/40-dr-drill.yml \
-  --limit prisma-console-dev-dc2 \
+  --limit prisma-console-dev-secondary \
   -e prisma_restore_confirmed=true \
   -e prisma_restore_dry_run=true
 ```

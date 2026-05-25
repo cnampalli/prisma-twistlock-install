@@ -60,19 +60,21 @@ Operator supplies (NOT committed; see `.gitignore`):
 - `files/prisma_cloud_compute_edition_34_01_126.tar.gz.sha256` (single line: `<sha256>  prisma_cloud_compute_edition_34_01_126.tar.gz`)
 - `files/console.crt`, `files/console.key`, `files/ca-chain.crt`
 
-Secrets (licence key, LDAPS bind password, Prisma backup token, internal backup URL) come from Vault via the same AppRole pattern as the `twistlock-exemption` repo, or from an Ansible Vault-encrypted file — never from plain YAML.
+Secrets consumed by automation (Prisma backup token, internal backup URL, DR restore API user/password) are injected at job launch by **AAP Controller credentials** — see [`controller/README.md`](controller/README.md). For local CLI runs, pass them with `-e @local-secrets.yml` (gitignored). The licence key and LDAPS bind password are entered in the Console UI during the manual Phase 11 first-run wizard; no playbook reads them.
+
+Pick the environment with `inventories/{dev,preproduction,production}/hosts.yml`.
 
 ## Run
 
 ```bash
 # Full build (matches runbook Phases 2–10)
-ansible-playbook -i inventory/dev/hosts.yml playbooks/site.yml
+ansible-playbook -i inventories/dev/hosts.yml playbooks/site.yml
 
 # Slice — re-run only podman configuration
-ansible-playbook -i inventory/dev/hosts.yml playbooks/site.yml --tags podman
+ansible-playbook -i inventories/dev/hosts.yml playbooks/site.yml --tags podman
 
 # Slice — re-run only the operational layer (systemd/logrotate/backup/monitoring)
-ansible-playbook -i inventory/dev/hosts.yml playbooks/site.yml --tags systemd,logrotate,backup,monitoring
+ansible-playbook -i inventories/dev/hosts.yml playbooks/site.yml --tags systemd,logrotate,backup,monitoring
 ```
 
 Phase 9 (running `./twistlock.sh -s console`) is deliberately **not** wrapped — see runbook §Phase 9.

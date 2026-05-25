@@ -9,6 +9,7 @@ files/*.pem
 *.vault
 vault_pass*
 *.env
+local-secrets.yml
 
 # Ansible transient
 *.retry
