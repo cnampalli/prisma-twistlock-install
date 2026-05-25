@@ -11,20 +11,14 @@ The canonical runbook is [`docs/runbook.md`](docs/runbook.md). This repo provide
 ├── README.md                 # this file
 ├── docs/runbook.md           # full runbook (Manual vs Ansible tagged per step)
 ├── ansible.cfg
-├── inventory/                # directory-per-env (dev populated; others are templates)
-│   ├── dev/
-│   │   ├── hosts.yml         # 2 DCs × 3 VM roles (console, scanner, sandbox)
-│   │   ├── group_vars/       # env-wide + per-DC overrides (all.yml, dc1.yml, dc2.yml)
-│   │   └── host_vars/        # per-host overrides
-│   ├── pre-prod-ht/hosts.yml # commented template
-│   ├── pre-prod-vht/hosts.yml
-│   ├── prod-ht/hosts.yml
-│   └── prod-vht/hosts.yml
-├── group_vars/               # cross-env defaults (applied to every env)
-│   ├── all.yml               # fleet-wide
-│   ├── prisma_console.yml
-│   ├── prisma_scanner.yml
-│   └── prisma_sandbox.yml
+├── inventories/              # one directory per environment
+│   ├── dev/                  # fully populated; preproduction/ + production/ mirror it
+│   │   ├── hosts.yml         # prisma_console/scanner/sandbox × primary + secondary sites
+│   │   ├── group_vars/       # all.yml, prisma_{all,console,scanner,sandbox}.yml, primary.yml, secondary.yml
+│   │   └── host_vars/        # per-host FQDN / data-device overrides
+│   ├── preproduction/        # same shape, placeholder IPs
+│   └── production/           # same shape, placeholder IPs
+├── controller/               # AAP 2.4 controller-as-code (project, inventories, credentials, templates, workflows, surveys)
 ├── playbooks/
 │   ├── site.yml              # run everything, ordered (console path)
 │   ├── 00-baseline.yml       # Phases 2–4 (console)

@@ -30,23 +30,20 @@ are load-bearing — revisit them before changing direction.
 ### Inventory (Phase 1 — this change)
 
 ```
-group_vars/                          # KEPT at project root (cross-env defaults)
-  prisma_console.yml                 # unchanged
-  prisma_scanner.yml                 # NEW stub
-  prisma_sandbox.yml                 # NEW stub
-  all.yml                            # NEW stub (fleet-wide)
-inventory/
-  dev/
-    hosts.yml                        # populated (2 DCs × 3 VMs placeholders)
+inventories/                         # one directory per environment
+  dev/                               # fully populated (placeholder IPs/FQDNs)
+    hosts.yml                        # prisma_console/scanner/sandbox × primary + secondary
     group_vars/
-      all.yml                        # env-wide overrides
-      dc1.yml                        # per-DC overrides
-      dc2.yml
-    host_vars/                       # 6 files, placeholder IPs/FQDNs/devices
-  pre-prod-ht/hosts.yml              # commented template
-  pre-prod-vht/hosts.yml             # commented template
-  prod-ht/hosts.yml                  # commented template
-  prod-vht/hosts.yml                 # commented template
+      all.yml                        # env-wide
+      prisma_all.yml                 # all host classes
+      prisma_console.yml             # console class (de-vaulted)
+      prisma_scanner.yml             # scanner class
+      prisma_sandbox.yml             # sandbox class
+      primary.yml                    # live site (ansible_group_priority: 10)
+      secondary.yml                  # DR target (is_dr_target: true)
+    host_vars/                       # per-host FQDN / data-device overrides
+  preproduction/                     # same shape
+  production/                        # same shape
 ```
 
 Superseded (AAP restructure): `group_vars/` now lives **inside** each
@@ -75,7 +72,7 @@ The old root-level `group_vars/` and singular `inventory/` tree were removed.
 - `11-docker.yml` — hosts `prisma_scanner:prisma_sandbox`
 - `21-defender.yml` — hosts `prisma_scanner` (runs after Console Phase 9)
 - `22-sandbox.yml` — hosts `prisma_sandbox`
-- `40-dr-drill.yml` — hosts `prisma_console:&dc2`
+- `40-dr-drill.yml` — hosts `prisma_console:&secondary`
 
 ### Modified roles (Phase 2+)
 
@@ -96,11 +93,11 @@ The old root-level `group_vars/` and singular `inventory/` tree were removed.
 
 Lowest → highest:
 1. role defaults
-2. `group_vars/all.yml` (project root — fleet-wide)
-3. `group_vars/prisma_console.yml` (project root — group-wide across envs)
-4. `inventory/<env>/group_vars/all.yml` (env-wide)
-5. `inventory/<env>/group_vars/dc1.yml` (per-DC)
-6. `inventory/<env>/host_vars/<host>.yml` (host)
+2. `inventories/<env>/group_vars/all.yml` (env-wide)
+3. `inventories/<env>/group_vars/prisma_all.yml` (all host classes)
+4. `inventories/<env>/group_vars/prisma_{console,scanner,sandbox}.yml` (role class)
+5. `inventories/<env>/group_vars/{primary,secondary}.yml` (per-site, ansible_group_priority: 10)
+6. `inventories/<env>/host_vars/<host>.yml` (host)
 
 ## New vault variables
 

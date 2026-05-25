@@ -90,7 +90,7 @@ secondary. Sample outline:
 ```
 Prisma Console DR Drill Report
 ==============================
-Host:              prisma-console-dev-dc2
+Host:              prisma-console-dev-secondary
 Start timestamp:   2026-04-24T02:17:03Z
 End timestamp:     2026-04-24T02:19:51Z
 Outcome:           success
