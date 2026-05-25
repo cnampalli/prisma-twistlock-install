@@ -1,0 +1,36 @@
+---
+argument_specs:
+  main:
+    short_description: "Configure rootful podman (registries, storage, ulimits, cgroup, FIPS runtime) for the Console."
+    options:
+      podman_internal_registry:
+        type: str
+        description: "FQDN of the air-gapped internal registry hosting Prisma/Defender images."
+      podman_blocked_registries:
+        type: list
+        elements: str
+        description: "Registries explicitly blocked to prevent public-internet egress."
+      podman_log_size_max:
+        type: int
+        description: "Max log file size per container in bytes."
+      podman_pids_limit:
+        type: int
+        description: "PIDs ceiling per container."
+      podman_nofile:
+        type: str
+        description: "ulimit nofile as soft:hard string (>=65535)."
+      podman_nproc:
+        type: str
+        description: "ulimit nproc as soft:hard string."
+      podman_cgroup_manager:
+        type: str
+        description: "cgroup manager (systemd for cgroup v2)."
+      podman_runtime:
+        type: str
+        description: "OCI runtime; crun is FIPS-validated on RHEL."
+      podman_registry_ca_cert:
+        type: str
+        description: "Control-host path to a PEM CA cert for the internal registry; empty uses the system trust store."
+      prisma_data_folder:
+        type: str
+        description: "Console persistent-data folder referenced by podman config."

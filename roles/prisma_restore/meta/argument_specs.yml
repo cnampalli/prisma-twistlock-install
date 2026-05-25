@@ -1,0 +1,44 @@
+---
+argument_specs:
+  main:
+    short_description: "Restore a secondary Console from a backup tarball, with safety interlock and health check."
+    options:
+      prisma_restore_nfs_path:
+        type: str
+        description: "Path searched for backup tarballs (matches prisma_backup_dir)."
+      prisma_restore_tarball_glob:
+        type: str
+        description: "Glob matching the primary's nightly backup output."
+      prisma_restore_specific_file:
+        type: str
+        description: "Full path to pin a specific backup; empty selects latest by mtime."
+      prisma_restore_confirmed:
+        type: bool
+        description: "Hard safety interlock; role refuses to run unless set true at runtime."
+      prisma_restore_dry_run:
+        type: bool
+        description: "Produce the report but skip the stop/restore/start/verify sequence."
+      prisma_restore_twistcli:
+        type: str
+        description: "Path to the twistcli binary on the secondary."
+      prisma_restore_unit:
+        type: str
+        description: "Systemd unit name for the local Console."
+      prisma_restore_health_url:
+        type: str
+        description: "Console URL for the post-restore health check (loopback recommended)."
+      prisma_restore_health_retries:
+        type: int
+        description: "Number of health-check retries during Console warm-up."
+      prisma_restore_health_delay:
+        type: int
+        description: "Delay in seconds between health-check retries."
+      prisma_restore_report_dir:
+        type: str
+        description: "Directory for the timestamped drill report."
+      prisma_restore_api_user:
+        type: str
+        description: "Optional Console API user for the health check."
+      prisma_restore_api_password:
+        type: str
+        description: "Console API password; injected by the Prisma Restore API Controller credential at launch."

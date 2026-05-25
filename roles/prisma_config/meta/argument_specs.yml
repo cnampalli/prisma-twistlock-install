@@ -1,0 +1,32 @@
+---
+argument_specs:
+  main:
+    short_description: "Render twistlock.cfg into the extracted installer dir, preserving the shipped original."
+    options:
+      prisma_extracted_dir:
+        type: str
+        description: "Path to the extracted Prisma installer directory holding twistlock.cfg."
+      prisma_fips_enabled:
+        type: bool
+        description: "Whether FIPS mode is enabled; written as FIPS_ENABLED in twistlock.cfg."
+      prisma_data_folder:
+        type: str
+        description: "Console persistent-data folder; written as DATA_FOLDER."
+      prisma_https_port:
+        type: int
+        description: "Console HTTPS UI/API port; written as MANAGEMENT_PORT_HTTPS."
+      prisma_comm_port:
+        type: int
+        description: "Defender inbound comms port; written as COMMUNICATION_PORT."
+      prisma_custom_cert:
+        type: bool
+        description: "Whether a custom TLS cert is supplied; written as CUSTOM_CERT."
+      prisma_cert_path:
+        type: str
+        description: "Path to the custom Console certificate."
+      prisma_cert_key_path:
+        type: str
+        description: "Path to the custom Console private key."
+      prisma_cert_ca_path:
+        type: str
+        description: "Path to the custom CA chain."

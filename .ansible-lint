@@ -6,6 +6,10 @@ exclude_paths:
   - .github/
   - molecule/*/tmp/
   - molecule/*/.molecule/
+  # Controller-as-code: configure.yml imports infra.controller_configuration,
+  # a control-node-only collection deliberately kept out of requirements.yml
+  # (and CI). Validate controller/ separately — see controller/README.md.
+  - controller/
 
 # Air-gap + FIPS context drives these choices:
 skip_list:
@@ -19,7 +23,9 @@ skip_list:
   # `node_exporter_*` defaults pre-date the no-role-prefix rule. Renaming
   # them would touch every role and the group_vars/inventory that supplies
   # overrides, with no functional benefit — the vars never leak outside
-  # their role. Re-evaluate if any variable becomes a public role input.
+  # their role. Public inputs are now documented per role in
+  # meta/argument_specs.yml (without renaming), so this skip stays scoped
+  # to the internal registers.
   - var-naming[no-role-prefix]
 
 warn_list:

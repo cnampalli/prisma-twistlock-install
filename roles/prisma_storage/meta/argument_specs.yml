@@ -1,0 +1,20 @@
+---
+argument_specs:
+  main:
+    short_description: "Provision an XFS-on-LVM data volume and mount it at the data folder with SELinux labelling."
+    options:
+      prisma_data_device:
+        type: str
+        description: "Block device for the Console data volume (confirm per host)."
+      prisma_vg_name:
+        type: str
+        description: "LVM volume group name created on the data device."
+      prisma_lv_name:
+        type: str
+        description: "LVM logical volume name for the data partition."
+      prisma_fs_label:
+        type: str
+        description: "XFS filesystem label applied to the data volume."
+      prisma_data_folder:
+        type: str
+        description: "Mount point for the data volume (Console persistent-data folder)."

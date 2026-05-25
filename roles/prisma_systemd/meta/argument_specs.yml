@@ -1,0 +1,23 @@
+---
+argument_specs:
+  main:
+    short_description: "Apply a systemd override to the Prisma Console unit (TasksMax, RestartSec, memory enforcement)."
+    options:
+      prisma_systemd_unit:
+        type: str
+        description: "Systemd unit name for the Prisma Console service."
+      prisma_systemd_tasks_max:
+        type: int
+        description: "TasksMax ceiling for the Console unit."
+      prisma_systemd_restart_sec:
+        type: int
+        description: "RestartSec delay before systemd restarts the Console unit."
+      prisma_systemd_memory_high:
+        type: str
+        description: "Soft memory reclaim throttle for the Console cgroup (e.g. '90%')."
+      prisma_systemd_memory_max:
+        type: str
+        description: "Hard OOM-kill boundary for the Console cgroup (e.g. '95%')."
+      prisma_systemd_memory_swap_max:
+        type: str
+        description: "Swap ceiling for the Console cgroup ('0' disables swap)."

@@ -1,0 +1,37 @@
+---
+argument_specs:
+  main:
+    short_description: "Apply the RHEL baseline (packages, firewalld, sysctl, THP, journald, NTP) to all hosts."
+    options:
+      rhel_baseline_packages:
+        type: list
+        elements: str
+        description: "Minimum package set installed on every Prisma host class."
+      rhel_baseline_container_packages:
+        type: list
+        elements: str
+        description: "Host-class-specific container runtime package(s); podman on Console only."
+      rhel_baseline_firewall_ports:
+        type: list
+        elements: str
+        description: "Inbound firewalld ports to open (e.g. '8083/tcp')."
+      rhel_baseline_firewall_services:
+        type: list
+        elements: str
+        description: "firewalld services allowed into the host."
+      rhel_baseline_sysctl:
+        type: dict
+        description: "Kernel tunables required by the Console under load."
+      rhel_baseline_disable_thp:
+        type: bool
+        description: "Disable Transparent Huge Pages at boot via a systemd oneshot."
+      rhel_baseline_journald_max_use:
+        type: str
+        description: "journald SystemMaxUse cap (e.g. '2G')."
+      rhel_baseline_journald_keep_free:
+        type: str
+        description: "journald SystemKeepFree reserve (e.g. '1G')."
+      ntp_servers:
+        type: list
+        elements: str
+        description: "Internal NTP sources for chrony time sync."
