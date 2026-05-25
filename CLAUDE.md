@@ -48,7 +48,7 @@ Playbooks map 1:1 to runbook phases and compose roles in order:
 
 **Inventory layout**: `inventories/<env>/` for `dev`, `preproduction`, `production`. Each host sits on two axes — a role group (`prisma_console`/`prisma_scanner`/`prisma_sandbox` under `prisma_all`) and a **site group** (`primary` = live, `secondary` = DR target). Hosts are named `prisma-<role>-<env>-<site>`. Site group_vars (`{primary,secondary}.yml`) set `ansible_group_priority: 10` so site vars beat role-class vars (bare names like `primary` sort below `prisma_*` and would otherwise lose the tie). `secondary` carries `is_dr_target: true`.
 
-**AAP / Controller-as-code**: `controller/` holds the Automation Controller 4.5.x (AAP 2.4) desired state (project, 3 inventories, credential types, job templates, two workflows `prisma-build`/`prisma-ops`, DR survey) as data for `infra.controller_configuration.dispatch`. The EE is assumed to pre-exist. Its collections live in `controller/requirements.controller.yml` — **never** add them to the air-gapped `requirements.yml`. See `controller/README.md`.
+**AAP / Controller-as-code**: `controller/` holds the Automation Controller 4.5.x (AAP 2.4) desired state (project, 3 inventories, credential types, job templates, two workflows `prisma-build`/`prisma-ops`, DR survey) as data for `infra.controller_configuration.dispatch`. The EE is assumed to pre-exist. Its collections live in `controller/requirements.controller.yml` — **never** add them to the air-gapped `requirements.yml`. See `controller/README.md` for the automated apply and `docs/aap-controller-setup.md` for the manual UI walkthrough.
 
 ## Invariants — do not break
 

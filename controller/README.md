@@ -8,6 +8,12 @@ The **execution environment is assumed to already exist** in your registry — w
 do not build one here. Reference it by name (default placeholder
 `prisma-airgap-ee`).
 
+> **Setting this up by hand in the Controller UI?** Follow
+> [`docs/aap-controller-setup.md`](../docs/aap-controller-setup.md) — a
+> step-by-step walkthrough (credential types, credentials, project,
+> inventories, job templates, workflows, survey) with the exact field values,
+> plus the automated-apply path below.
+
 ## Apply
 
 ```bash

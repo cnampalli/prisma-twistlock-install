@@ -1,0 +1,289 @@
+# AAP 2.4 Controller setup guide
+
+How to stand up the Automation Controller (4.5.x) objects that run the Prisma
+Console install — **by hand in the Controller UI**, or via the controller-as-code
+in [`controller/`](../controller/).
+
+The **execution environment (EE) is assumed to already exist** in your registry.
+Everywhere below the EE is referred to as `prisma-airgap-ee` — replace it with
+your real EE name.
+
+---
+
+## 0. Two ways to do this
+
+| Path | When | How |
+| --- | --- | --- |
+| **Automated** (controller-as-code) | You can reach the Controller API from a control node and install collections | `Part A` below — one `ansible-playbook` run |
+| **Manual** (Controller UI) | Air-gapped operator, no API push, or you want to click through it | `Part B` below — the bulk of this guide |
+
+Either way the **object model is identical**; the manual steps mirror the data
+in `controller/group_vars/all/`. The mapping table in §B.10 tells you which UI
+object corresponds to which file.
+
+---
+
+## Part A — Automated apply (optional)
+
+On a control node that can reach the Controller API:
+
+```bash
+export CONTROLLER_HOST=https://aap.internal      # or CONTROLLER_HOSTNAME
+export CONTROLLER_USERNAME=admin
+export CONTROLLER_PASSWORD=...                    # or CONTROLLER_OAUTH_TOKEN
+ansible-galaxy collection install -r controller/requirements.controller.yml
+ansible-playbook -i controller/inventory.ini controller/configure.yml
+```
+
+This creates everything in §B in one pass. You still fill the **secret** fields
+afterwards (§B.4). Skip to §C for the operational flow.
+
+---
+
+## Part B — Manual setup in the Controller UI
+
+Do these **in order** — each step depends on the ones above it.
+
+### Prerequisites
+- Controller admin (or an org admin for the target organization).
+- The EE image (`prisma-airgap-ee`) already present in the Controller's registry.
+- This repo reachable over git from the Controller (for the SCM project), or the
+  project synced by another means.
+- Decide your real names for: **Organization**, **EE**, **git URL**.
+
+### B.1 Organization
+**Access → Organizations → Add**
+- **Name:** `Security Platform` *(REPLACE-ME — used by every object below)*
+- **Execution Environment:** `prisma-airgap-ee` (optional default)
+
+### B.2 Project (source of the playbooks + inventories)
+**Resources → Projects → Add**
+- **Name:** `prisma-twistlock-install`
+- **Organization:** `Security Platform`
+- **Source Control Type:** Git
+- **Source Control URL:** your internal git URL for this repo *(REPLACE-ME)*
+- **Source Control Branch:** `main`
+- **Execution Environment:** `prisma-airgap-ee`
+- **Options:** ✓ Update Revision on Launch, ✓ Clean
+
+Save and confirm the first **Sync** succeeds (green). The project must sync
+before inventories can source from it.
+
+### B.3 Credential Types (custom)
+**Administration → Credential Types → Add.** Create all three. For each, paste
+**Input configuration** and **Injector configuration** exactly as shown.
+
+#### Prisma Backup
+Input configuration:
+```yaml
+fields:
+  - id: prisma_backup_token
+    type: string
+    label: Console backup service-account token
+    secret: true
+  - id: internal_backup_url
+    type: string
+    label: Internal artefact store base URL
+required:
+  - prisma_backup_token
+  - internal_backup_url
+```
+Injector configuration:
+```yaml
+extra_vars:
+  prisma_backup_token: '{{ prisma_backup_token }}'
+  internal_backup_url: '{{ internal_backup_url }}'
+```
+
+#### Prisma Restore API
+Input configuration:
+```yaml
+fields:
+  - id: prisma_restore_api_user
+    type: string
+    label: Console API user (restore)
+  - id: prisma_restore_api_password
+    type: string
+    label: Console API password (restore)
+    secret: true
+required:
+  - prisma_restore_api_user
+  - prisma_restore_api_password
+```
+Injector configuration:
+```yaml
+extra_vars:
+  prisma_restore_api_user: '{{ prisma_restore_api_user }}'
+  prisma_restore_api_password: '{{ prisma_restore_api_password }}'
+```
+
+#### Prisma First-Run *(stored for safekeeping — no playbook consumes these)*
+Holds the licence key + LDAPS bind password for the **manual Phase 11 first-run
+wizard**. Create it so AAP is the single secret home; the injectors are harmless
+if unused.
+Input configuration:
+```yaml
+fields:
+  - id: prisma_license_key
+    type: string
+    label: Prisma Cloud Compute licence key
+    secret: true
+  - id: prisma_ldaps_bind_password
+    type: string
+    label: LDAPS bind password
+    secret: true
+```
+Injector configuration:
+```yaml
+extra_vars:
+  prisma_license_key: '{{ prisma_license_key }}'
+  prisma_ldaps_bind_password: '{{ prisma_ldaps_bind_password }}'
+```
+
+> **Why the `'{{ … }}'` syntax?** The Controller resolves the injector at job
+> launch and masks secret values in job output. (In the as-code files these are
+> wrapped with `!unsafe` so Ansible doesn't template them away on the push.)
+
+### B.4 Credentials (instances — this is where secrets go)
+**Resources → Credentials → Add.** Secret fields are write-only; fill them here.
+
+| Name | Credential Type | Fields to set |
+| --- | --- | --- |
+| `prisma-ssh` | Machine (built-in) | Username `ansible`; SSH private key for the target hosts |
+| `prisma-backup-prod` | Prisma Backup | `internal_backup_url` = `https://artefacts.internal/prisma/` *(REPLACE-ME)*; `prisma_backup_token` = **secret** |
+| `prisma-restore-api-prod` | Prisma Restore API | `prisma_restore_api_user` = `dr-restore` *(REPLACE-ME)*; `prisma_restore_api_password` = **secret** |
+| `prisma-firstrun` *(optional)* | Prisma First-Run | licence key + LDAPS bind password (both **secret**) — for operator reference |
+
+All under organization `Security Platform`.
+
+### B.5 Inventories
+**Resources → Inventories → Add → Add inventory.** Create three:
+
+| Name | Organization |
+| --- | --- |
+| `prisma-dev` | `Security Platform` |
+| `prisma-preproduction` | `Security Platform` |
+| `prisma-production` | `Security Platform` |
+
+### B.6 Inventory Sources (SCM → this repo)
+For **each** inventory: open it → **Sources → Add**:
+- **Source:** Sourced from a Project
+- **Project:** `prisma-twistlock-install`
+- **Inventory file:** the matching path:
+  - `prisma-dev` → `inventories/dev/hosts.yml`
+  - `prisma-preproduction` → `inventories/preproduction/hosts.yml`
+  - `prisma-production` → `inventories/production/hosts.yml`
+- **Options:** ✓ Overwrite, ✓ Overwrite variables, ✓ Update on launch
+
+Click **Sync** on each. After sync, the **Groups** tab should show
+`prisma_all`, `prisma_console`, `prisma_scanner`, `prisma_sandbox`, `primary`,
+and `secondary` — confirming the site model loaded.
+
+### B.7 Job Templates
+**Resources → Templates → Add → Add job template.** Create the six below. Shared
+settings for **all** of them:
+- **Job Type:** Run
+- **Project:** `prisma-twistlock-install`
+- **Execution Environment:** `prisma-airgap-ee`
+- **Prompt on launch:** ✓ Inventory, ✓ Limit *(Limit lets you scope to `primary`
+  or `secondary`)*
+- **Options:** ✓ Privilege Escalation (become)
+- **Credentials:** `prisma-ssh` (plus extras noted below)
+
+| Template name | Playbook | Extra credentials | Survey |
+| --- | --- | --- | --- |
+| `prisma-00-baseline (Phases 2-4)` | `playbooks/00-baseline.yml` | — | — |
+| `prisma-10-podman (Phase 5)` | `playbooks/10-podman.yml` | — | — |
+| `prisma-11-docker (Phase 3b)` | `playbooks/11-docker.yml` | — | — |
+| `prisma-site (Phases 2-8)` | `playbooks/site.yml` | — | — |
+| `prisma-30-ops (Phase 10)` | `playbooks/30-prisma-ops.yml` | `prisma-backup-prod` | — |
+| `prisma-40-dr-drill` | `playbooks/40-dr-drill.yml` | `prisma-restore-api-prod` | ✓ (see B.9) |
+
+> The DR-drill play self-limits to `prisma_console:&secondary`, so it can only
+> touch a secondary console even if you leave Limit blank.
+
+### B.8 Workflow Templates
+**Resources → Templates → Add → Add workflow template.** Create two. They are
+**deliberately separate** because Phase 9 (the interactive `./twistlock.sh`)
+cannot run unattended.
+
+**`prisma-build`** — Phases 2–8
+- Organization `Security Platform`; ✓ Prompt on launch: Inventory, Limit
+- Visualizer: one node → **Job Template** `prisma-site (Phases 2-8)`
+
+**`prisma-ops`** — Phase 10
+- Organization `Security Platform`; ✓ Prompt on launch: Inventory, Limit
+- Visualizer: one node → **Job Template** `prisma-30-ops (Phase 10)`
+
+### B.9 Survey (DR drill)
+Open `prisma-40-dr-drill` → **Survey** → add three questions, then toggle the
+survey **On**:
+
+| Prompt | Variable | Type | Choices | Default | Required |
+| --- | --- | --- | --- | --- | --- |
+| Confirm DR restore | `prisma_restore_confirmed` | Multiple Choice (single) | `false`, `true` | `false` | ✓ |
+| Dry run only? | `prisma_restore_dry_run` | Multiple Choice (single) | `true`, `false` | `true` | ✓ |
+| Restore source (optional) | `prisma_restore_specific_file` | Text | — | *(empty)* | — |
+
+Empty restore source = latest backup by mtime; otherwise the full path to a
+specific tarball.
+
+### B.10 Object → as-code file mapping
+If you ever reconcile the UI against the repo:
+
+| UI object | File in `controller/group_vars/all/` |
+| --- | --- |
+| Organization | `controller_organizations.yml` |
+| Project | `controller_projects.yml` |
+| Inventories | `controller_inventories.yml` |
+| Inventory sources | `controller_inventory_sources.yml` |
+| Credential types | `controller_credential_types.yml` |
+| Credentials | `controller_credentials.yml` |
+| Job templates | `controller_job_templates.yml` |
+| Workflows | `controller_workflows.yml` |
+| DR survey | `survey_dr_drill.yml` |
+
+---
+
+## Part C — Operational flow (the important bit)
+
+The install spans an unattended part, a manual part, and an unattended part:
+
+1. **Launch `prisma-build`** (or the `prisma-site` job template). Pick the
+   inventory (`prisma-dev` / `-preproduction` / `-production`); optionally set
+   **Limit** to `primary` or `secondary`. This runs Phases 2–8.
+2. **Manual Phase 9 — on the console host, by hand:**
+   ```bash
+   cd /opt/prisma-install/prisma_cloud_compute_edition_34_01_126
+   ./twistlock.sh -s console | tee /root/twistlock-install.log
+   ```
+   This is interactive and intentionally **not** automated; it creates
+   `/etc/systemd/system/twistlock.service`. (Enter the licence key + admin/LDAPS
+   details in the Console UI first-run wizard — the `Prisma First-Run`
+   credential is just where you keep those secrets.)
+3. **Launch `prisma-ops`** (or the `prisma-30-ops` job template) against the same
+   inventory. This runs Phase 10 (systemd hardening, log rotation, backup,
+   monitoring) and requires the unit from step 2 to exist.
+4. **DR drill (as needed):** launch `prisma-40-dr-drill`, answer the survey
+   (`Confirm DR restore` = `true`, choose dry-run or real). It restores a
+   **secondary** console only.
+
+---
+
+## Part D — Verify
+
+- Each inventory **Sync** shows the `primary`/`secondary` groups (§B.6).
+- A `prisma-site` **dry launch** prompts for inventory + limit and resolves hosts
+  (use a real run only against real targets).
+- DR-drill launch shows the survey and, with `prisma_restore_confirmed=false`,
+  the play **aborts at the interlock** (expected).
+- Secret fields on the credentials read back as `ENCRYPTED` (never plaintext).
+
+## Notes
+- **Secrets** live only in Controller credentials (§B.4) — never in the repo.
+  Licence + LDAPS bind password are entered in the Console UI at Phase 9; no
+  playbook reads them.
+- For a **local CLI** run outside AAP, pass the same secrets via a gitignored
+  file: `ansible-playbook -i inventories/<env>/hosts.yml playbooks/30-prisma-ops.yml -e @local-secrets.yml`.
+- See [`controller/README.md`](../controller/README.md) for the as-code details
+  and the full REPLACE-ME list.
