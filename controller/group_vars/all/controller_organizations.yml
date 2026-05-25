@@ -1,0 +1,4 @@
+---
+controller_organizations:
+  - name: "Security Platform"          # REPLACE-ME: your AAP organization
+    description: "Prisma Cloud Compute — air-gapped install automation"

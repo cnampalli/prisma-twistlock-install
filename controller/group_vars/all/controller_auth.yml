@@ -1,0 +1,7 @@
+---
+# Controller API connection. The awx.awx / ansible.controller modules read the
+# host + credentials from the environment — do NOT commit them here:
+#   CONTROLLER_HOST (or CONTROLLER_HOSTNAME), CONTROLLER_USERNAME,
+#   CONTROLLER_PASSWORD  (or CONTROLLER_OAUTH_TOKEN)
+# Set validate_certs to false only for a lab with self-signed certs.
+controller_validate_certs: true

@@ -1,0 +1,31 @@
+---
+# Each Controller inventory is sourced from this repo's inventories/<env>/hosts.yml
+# via the SCM project, so the primary/secondary site groups + group_vars sync in.
+controller_inventory_sources:
+  - name: "prisma-dev-scm"
+    inventory: "prisma-dev"
+    organization: "Security Platform"
+    source: scm
+    source_project: "prisma-twistlock-install"
+    source_path: "inventories/dev/hosts.yml"
+    update_on_launch: true
+    overwrite: true
+    overwrite_vars: true
+  - name: "prisma-preproduction-scm"
+    inventory: "prisma-preproduction"
+    organization: "Security Platform"
+    source: scm
+    source_project: "prisma-twistlock-install"
+    source_path: "inventories/preproduction/hosts.yml"
+    update_on_launch: true
+    overwrite: true
+    overwrite_vars: true
+  - name: "prisma-production-scm"
+    inventory: "prisma-production"
+    organization: "Security Platform"
+    source: scm
+    source_project: "prisma-twistlock-install"
+    source_path: "inventories/production/hosts.yml"
+    update_on_launch: true
+    overwrite: true
+    overwrite_vars: true

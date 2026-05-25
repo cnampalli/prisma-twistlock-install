@@ -1,0 +1,12 @@
+---
+controller_projects:
+  - name: "prisma-twistlock-install"
+    organization: "Security Platform"                                   # REPLACE-ME
+    scm_type: git
+    scm_url: "https://git.internal/infra/prisma-twistlock-install.git"  # REPLACE-ME
+    scm_branch: main
+    scm_clean: true
+    scm_update_on_launch: true
+    scm_update_cache_timeout: 0
+    default_environment: "prisma-airgap-ee"                             # REPLACE-ME: existing EE
+    description: "Air-gapped Prisma Console install playbooks"

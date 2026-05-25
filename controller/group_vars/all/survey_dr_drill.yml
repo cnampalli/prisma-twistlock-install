@@ -1,0 +1,32 @@
+---
+# Functional survey for the DR-drill job template. Each variable maps to a
+# prisma_restore role input. The play already self-limits to
+# `prisma_console:&secondary`, so this survey governs behaviour, not targeting.
+survey_dr_drill:
+  name: "DR drill"
+  description: "Confirm and scope a DR restore against a secondary Console."
+  spec:
+    - question_name: "Confirm DR restore"
+      question_description: "Must be true or the prisma_restore role aborts."
+      variable: prisma_restore_confirmed
+      type: multiplechoice
+      choices:
+        - "false"
+        - "true"
+      default: "false"
+      required: true
+    - question_name: "Dry run only?"
+      question_description: "true = inspect/plan only; no stop, restore, or start."
+      variable: prisma_restore_dry_run
+      type: multiplechoice
+      choices:
+        - "true"
+        - "false"
+      default: "true"
+      required: true
+    - question_name: "Restore source (optional)"
+      question_description: "Empty = latest backup by mtime; otherwise the full path to a specific tarball."
+      variable: prisma_restore_specific_file
+      type: text
+      default: ""
+      required: false

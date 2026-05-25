@@ -1,0 +1,20 @@
+---
+# Push the desired Automation Controller state (AAP 2.4 / Controller 4.5.x)
+# from this repo's controller/ data. Run on a control node that CAN reach the
+# Controller API and has controller/requirements.controller.yml installed.
+# This is NOT part of the air-gapped install EE.
+#
+#   export CONTROLLER_HOST=https://aap.internal        # or CONTROLLER_HOSTNAME
+#   export CONTROLLER_USERNAME=admin
+#   export CONTROLLER_PASSWORD=...                      # or CONTROLLER_OAUTH_TOKEN
+#   ansible-galaxy collection install -r controller/requirements.controller.yml
+#   ansible-playbook -i controller/inventory.ini controller/configure.yml
+#
+# The dispatch role runs only the object roles whose `controller_*` data vars
+# are defined in controller/group_vars/all/.
+- name: Configure Automation Controller (controller-as-code)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - infra.controller_configuration.dispatch
