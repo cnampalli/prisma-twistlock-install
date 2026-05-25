@@ -1,0 +1,11 @@
+---
+controller_inventories:
+  - name: "prisma-dev"
+    organization: "Security Platform"
+    description: "Dev — primary + secondary sites"
+  - name: "prisma-preproduction"
+    organization: "Security Platform"
+    description: "Preproduction — primary + secondary sites"
+  - name: "prisma-production"
+    organization: "Security Platform"
+    description: "Production — primary + secondary sites"

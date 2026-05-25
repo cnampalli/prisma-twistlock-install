@@ -1,0 +1,27 @@
+---
+# Two deliberately-separate workflows. Phase 9 (interactive ./twistlock.sh)
+# cannot run unattended, so the build and ops halves are NOT joined by an
+# approval node — the operator runs Phase 9 by hand between them.
+controller_workflows:
+  - name: "prisma-build"
+    organization: "Security Platform"
+    description: >-
+      Phases 2-8: RHEL baseline, FIPS, storage, podman/docker runtimes, TLS,
+      installer staging, twistlock.cfg. After this completes, run Phase 9
+      (./twistlock.sh -s console) on the console host, then launch prisma-ops.
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    simplified_workflow_nodes:
+      - identifier: build-phases-2-8
+        unified_job_template: "prisma-site (Phases 2-8)"
+
+  - name: "prisma-ops"
+    organization: "Security Platform"
+    description: >-
+      Phase 10: systemd hardening, log rotation, backup, monitoring. Launch
+      ONLY after Phase 9 has created /etc/systemd/system/twistlock.service.
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    simplified_workflow_nodes:
+      - identifier: ops-phase-10
+        unified_job_template: "prisma-30-ops (Phase 10)"

@@ -1,0 +1,17 @@
+---
+# Control-node ONLY — collections used to PUSH Controller-as-Code.
+# Do NOT add these to the repo-root requirements.yml: the air-gapped install
+# EE must stay minimal and reproducible. Install these only on the box (or a
+# dedicated "controller config" EE) that reaches the Controller API.
+#
+# Pin to the releases your AAP 2.4 build was validated against (REPLACE-ME).
+# infra.controller_configuration is the AAP 2.4 name; it became
+# infra.aap_configuration in AAP 2.5+.
+collections:
+  - name: infra.controller_configuration
+    version: "2.5.0"
+  - name: awx.awx
+    version: "24.6.1"
+  # Certified alternative to awx.awx (requires Automation Hub entitlement):
+  # - name: ansible.controller
+  #   version: "4.5.0"

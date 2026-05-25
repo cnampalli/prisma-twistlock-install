@@ -1,0 +1,69 @@
+---
+# One job template per playbook/phase. Environment is chosen at launch
+# (ask_inventory_on_launch); site scoping uses the Limit field
+# (ask_limit_on_launch) with the inventory groups 'primary' / 'secondary'.
+# The EE is referenced by name and assumed to exist (REPLACE-ME).
+controller_templates:
+  - name: "prisma-00-baseline (Phases 2-4)"
+    project: "prisma-twistlock-install"
+    playbook: "playbooks/00-baseline.yml"
+    execution_environment: "prisma-airgap-ee"
+    become_enabled: true
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    credentials:
+      - "prisma-ssh"
+
+  - name: "prisma-10-podman (Phase 5)"
+    project: "prisma-twistlock-install"
+    playbook: "playbooks/10-podman.yml"
+    execution_environment: "prisma-airgap-ee"
+    become_enabled: true
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    credentials:
+      - "prisma-ssh"
+
+  - name: "prisma-11-docker (Phase 3b)"
+    project: "prisma-twistlock-install"
+    playbook: "playbooks/11-docker.yml"
+    execution_environment: "prisma-airgap-ee"
+    become_enabled: true
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    credentials:
+      - "prisma-ssh"
+
+  - name: "prisma-site (Phases 2-8)"
+    project: "prisma-twistlock-install"
+    playbook: "playbooks/site.yml"
+    execution_environment: "prisma-airgap-ee"
+    become_enabled: true
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    credentials:
+      - "prisma-ssh"
+
+  - name: "prisma-30-ops (Phase 10)"
+    project: "prisma-twistlock-install"
+    playbook: "playbooks/30-prisma-ops.yml"
+    execution_environment: "prisma-airgap-ee"
+    become_enabled: true
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    credentials:
+      - "prisma-ssh"
+      - "prisma-backup-prod"
+
+  - name: "prisma-40-dr-drill"
+    project: "prisma-twistlock-install"
+    playbook: "playbooks/40-dr-drill.yml"
+    execution_environment: "prisma-airgap-ee"
+    become_enabled: true
+    ask_inventory_on_launch: true
+    ask_limit_on_launch: true
+    credentials:
+      - "prisma-ssh"
+      - "prisma-restore-api-prod"
+    survey_enabled: true
+    survey_spec: "{{ survey_dr_drill }}"
