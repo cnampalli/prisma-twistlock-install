@@ -33,6 +33,12 @@ platforms:
 
 provisioner:
   name: ansible
+  config_options:
+    defaults:
+      # ubi-init containers expose an unwritable HOME over the docker
+      # connection, so Ansible's default ~/.ansible/tmp can't be created.
+      # Root the remote tmp under /tmp (per Ansible's own suggestion).
+      remote_tmp: /tmp/.ansible-tmp
   playbooks:
     prepare: prepare.yml
     converge: converge.yml
