@@ -23,9 +23,11 @@ From `roles/prisma_backup/defaults/main.yml`:
 | `prisma_backup_insecure_tls` | `false` | Disable curl TLS verification. Keep `false` in production. |
 | `prisma_backup_ca_bundle` | `{{ prisma_cert_ca_path }}` | CA bundle passed as `--cacert` when TLS verify is on. |
 
-Also consumes, from `group_vars/prisma_console.yml`: `prisma_backup_dir`,
-`prisma_backup_retention_days`, `prisma_backup_user`, `prisma_https_port`,
-and the Vault-supplied `prisma_backup_token` + `internal_backup_url`.
+Also consumes, from `inventories/<env>/group_vars/prisma_console.yml`:
+`prisma_backup_dir`, `prisma_backup_retention_days`, `prisma_backup_user`,
+`prisma_https_port`, and the Controller-injected `prisma_backup_token` +
+`internal_backup_url` (supplied at job launch by the "Prisma Backup"
+credential — see `controller/README.md`).
 
 ## Dependencies
 
@@ -33,18 +35,18 @@ and the Vault-supplied `prisma_backup_token` + `internal_backup_url`.
 - **Role order:** must run after `prisma_systemd` (Console service is up and
   the backup API responds) and after `prisma_tls` (CA bundle at
   `prisma_cert_ca_path` exists).
-- **Operator artefacts:** Vault-supplied `prisma_backup_token` (Console
-  service-account token) and `internal_backup_url` (artefact store PUT URL).
-  Do not commit real values.
+- **Operator secrets:** `prisma_backup_token` (Console service-account token)
+  and `internal_backup_url` (artefact store PUT URL) are injected at job launch
+  by the "Prisma Backup" Controller credential. Never committed.
 
 ## Example usage
 
 ```yaml
+# Under AAP, the "Prisma Backup" credential injects the two secrets as
+# extra_vars at launch. For a local CLI run, pass them via a gitignored file:
+#   ansible-playbook playbooks/30-prisma-ops.yml -e @local-secrets.yml
 - hosts: prisma_console
   become: true
-  vars:
-    prisma_backup_token: "{{ lookup('community.hashi_vault.hashi_vault', 'secret=kv/prisma:token') }}"
-    internal_backup_url: https://artefacts.internal/prisma/
   roles:
     - role: prisma_backup
       tags: [backup]

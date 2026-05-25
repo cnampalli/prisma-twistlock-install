@@ -46,7 +46,8 @@ the output. Implements Task 2 from `New-Tasks.md`.
    visible to the secondary via the shared mount.
 4. **Console API credentials for the restore call.** Dedicated service
    account, role = *CI Access User* or similar with restore permission.
-   Credentials in ansible-vault or Vault; never plaintext.
+   Injected by the "Prisma Restore API" Controller credential at job launch
+   (or `-e @local-secrets.yml` for a local CLI run); never plaintext.
 5. **`twistcli` on the secondary.** Normally provisioned by the
    `prisma_stage` role during Phase 7. Path defaults to
    `{{ prisma_extracted_dir }}/linux/twistcli`.
@@ -57,11 +58,9 @@ Full scheduled drill:
 
 ```bash
 ansible-playbook playbooks/40-dr-drill.yml \
-  --limit prisma-console-dev-dc2 \
+  -i inventories/dev/hosts.yml \
   -e prisma_restore_confirmed=true \
-  -e prisma_restore_api_user=drill-svc \
-  -e @/etc/ansible/drill-secrets.vault.yml \
-  --vault-password-file /etc/ansible/vault-pass
+  -e @local-secrets.yml
 ```
 
 Pre-flight only (no restore; verifies mount + backup file + twistcli
@@ -69,7 +68,7 @@ presence and writes a dry-run report):
 
 ```bash
 ansible-playbook playbooks/40-dr-drill.yml \
-  --limit prisma-console-dev-dc2 \
+  --limit prisma-console-dev-secondary \
   -e prisma_restore_confirmed=true \
   -e prisma_restore_dry_run=true
 ```
@@ -78,7 +77,7 @@ Pinned backup file (specific night, not latest):
 
 ```bash
 ansible-playbook playbooks/40-dr-drill.yml \
-  --limit prisma-console-dev-dc2 \
+  --limit prisma-console-dev-secondary \
   -e prisma_restore_confirmed=true \
   -e prisma_restore_specific_file=/var/lib/twistlock-backup/prisma-20260410T021513Z.tar.gz
 ```

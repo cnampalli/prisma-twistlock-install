@@ -19,7 +19,7 @@ is podman-everywhere viable?
 - **Lab scanner VM — docker path.** RHEL 8.10, Phase 2 converged
   against it (docker-ce-28.3.3 installed, FIPS on, no podman). The
   `11-docker.yml` playbook is the way to get here; use a populated
-  `inventory/dev/hosts.yml` or a one-off inventory with a single host
+  `inventories/dev/hosts.yml` or a one-off inventory with a single host
   in `prisma_scanner`.
 - **Lab scanner VM — podman path.** A second RHEL 8.10 VM with **no
   docker-ce installed** and **podman installed** from the RHEL base

@@ -49,11 +49,11 @@ inventory/
   prod-vht/hosts.yml                 # commented template
 ```
 
-Deviation from original plan: `group_vars/` stays at project root (not moved
-under `inventory/`). Reason: Ansible only auto-loads group_vars adjacent to
-the `-i` path; a shared `inventory/group_vars/` would not merge with
-`-i inventory/dev/hosts.yml`. Keeping at root preserves cwd-relative
-discovery.
+Superseded (AAP restructure): `group_vars/` now lives **inside** each
+environment at `inventories/<env>/group_vars/` (dev, preproduction,
+production), loaded adjacent to `-i inventories/<env>/hosts.yml`. Each host
+sits on a role group (`prisma_*`) and a site group (`primary`/`secondary`).
+The old root-level `group_vars/` and singular `inventory/` tree were removed.
 
 ### New roles (Phase 2+)
 
