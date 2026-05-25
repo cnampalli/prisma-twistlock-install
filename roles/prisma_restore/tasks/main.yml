@@ -7,7 +7,7 @@
     fail_msg: >-
       prisma_restore refused: pass -e prisma_restore_confirmed=true and
       target the secondary host explicitly (e.g.
-      "ansible-playbook playbooks/40-dr-drill.yml --limit prisma-console-dev-dc2
+      "ansible-playbook playbooks/40-dr-drill.yml --limit prisma-console-dev-secondary
       -e prisma_restore_confirmed=true"). Primary hosts must NOT be
       included in the run.
 
