@@ -3,6 +3,11 @@
 # (ask_inventory_on_launch); site scoping uses the Limit field
 # (ask_limit_on_launch) with the inventory groups 'primary' / 'secondary'.
 # The EE is referenced by name and assumed to exist (REPLACE-ME).
+#
+# Backup + restore secrets are supplied via surveys (survey_ops_backup.yml,
+# survey_dr_drill.yml), NOT custom credential types — so no Controller
+# superuser is needed. The only attached credential is the built-in Machine
+# credential (prisma-ssh).
 controller_templates:
   - name: "prisma-00-baseline (Phases 2-4)"
     project: "prisma-twistlock-install"
@@ -53,7 +58,8 @@ controller_templates:
     ask_limit_on_launch: true
     credentials:
       - "prisma-ssh"
-      - "prisma-backup-prod"
+    survey_enabled: true
+    survey_spec: "{{ survey_ops_backup }}"
 
   - name: "prisma-40-dr-drill"
     project: "prisma-twistlock-install"
@@ -64,6 +70,5 @@ controller_templates:
     ask_limit_on_launch: true
     credentials:
       - "prisma-ssh"
-      - "prisma-restore-api-prod"
     survey_enabled: true
     survey_spec: "{{ survey_dr_drill }}"

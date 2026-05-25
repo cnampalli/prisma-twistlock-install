@@ -2,6 +2,8 @@
 # Functional survey for the DR-drill job template. Each variable maps to a
 # prisma_restore role input. The play already self-limits to
 # `prisma_console:&secondary`, so this survey governs behaviour, not targeting.
+# It also carries the restore API user/password (previously a custom "Prisma
+# Restore API" credential type) so the DR drill needs no Controller superuser.
 survey_dr_drill:
   name: "DR drill"
   description: "Confirm and scope a DR restore against a secondary Console."
@@ -30,3 +32,14 @@ survey_dr_drill:
       type: text
       default: ""
       required: false
+    - question_name: "Console API user (restore)"
+      question_description: "Prisma Console API user the prisma_restore role authenticates as (twistcli)."
+      variable: prisma_restore_api_user
+      type: text
+      default: "dr-restore"
+      required: true
+    - question_name: "Console API password (restore)"
+      question_description: "Password/token for the restore API user (secret; masked in job output)."
+      variable: prisma_restore_api_password
+      type: password
+      required: true
