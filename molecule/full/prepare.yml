@@ -21,13 +21,18 @@
         state: directory
         mode: "0755"
 
-    - name: Install tooling used by the prepare play
+    - name: Install tooling used by the prepare play + converge
       ansible.builtin.package:
         name:
           - openssl
           - tar
           - gzip
           - coreutils
+          # converge needs these in the container: python3-cryptography for
+          # the community.crypto modules in prisma_tls, policycoreutils for
+          # the restorecon call. Minimal UBI images ship neither.
+          - python3-cryptography
+          - policycoreutils
         state: present
 
     - name: Build Prisma mock payload + sha256 manifest
