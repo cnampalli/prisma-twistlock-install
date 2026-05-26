@@ -48,6 +48,10 @@ controller_templates:
     ask_limit_on_launch: true
     credentials:
       - "prisma-ssh"
+    # TLS cert/key/CA supplied as inline PEM (prisma_tls content source) because
+    # the EE has no control-node files/ dir. See survey_stage_tls.yml.
+    survey_enabled: true
+    survey_spec: "{{ survey_stage_tls }}"
 
   - name: "prisma-30-ops (Phase 10)"
     project: "prisma-twistlock-install"

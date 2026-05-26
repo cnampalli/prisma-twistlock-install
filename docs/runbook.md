@@ -448,31 +448,43 @@ podman info | grep -E 'cgroupManager|logDriver|eventLogger'
 
 **Objective:** land cert, key, and CA chain with the correct perms and SELinux labels.
 
+**Cert source is pluggable** (role `prisma_tls`, auto-detected):
+- **`files`** (default) — `console.crt`/`console.key`/`ca-chain.crt` from the
+  control node's `files/` dir. Local CLI dev + `molecule/full`.
+- **`content`** — inline PEM in `prisma_cert_content` / `prisma_key_content` /
+  `prisma_ca_chain_content`. Use this when there is **no control-node `files/`**
+  (AAP EE): supply via the `prisma-site` job-template **survey**, or
+  `-e @certs.yml` for a CLI run.
+- **`vault`** — fetched from HashiCorp Vault (KV v2) with the builtin `uri`
+  module + token (`prisma_tls_vault_addr`/`_path`/`_token`). Inert until set; no
+  `community.hashi_vault` needed.
+
 ```yaml
 - name: Create pki dir
-  ansible.builtin.file:
-    path: /etc/pki/prisma
-    state: directory
-    owner: root
-    group: root
-    mode: "0750"
+  ansible.builtin.file: { path: /etc/pki/prisma, state: directory, owner: root, group: root, mode: "0750" }
 
-- name: Place cert/key/chain
+# content/vault source — write supplied PEM (no control-node files/ needed):
+- name: Place cert/key/chain (inline content)
   ansible.builtin.copy:
-    src: "{{ item.src }}"
+    content: "{{ item.content }}"
     dest: "/etc/pki/prisma/{{ item.dest }}"
     owner: root
     group: root
     mode: "{{ item.mode }}"
   loop:
-    - { src: console.crt,   dest: console.crt,   mode: "0600" }
-    - { src: console.key,   dest: console.key,   mode: "0600" }
-    - { src: ca-chain.crt,  dest: ca-chain.crt,  mode: "0644" }
+    - { content: "{{ prisma_cert_content }}",     dest: console.crt,  mode: "0600" }
+    - { content: "{{ prisma_key_content }}",      dest: console.key,  mode: "0600" }
+    - { content: "{{ prisma_ca_chain_content }}", dest: ca-chain.crt, mode: "0644" }
+  no_log: true
+# (files source uses copy: src= from files/ instead — see the role.)
 
 - name: Restore SELinux context
   ansible.builtin.command: restorecon -R /etc/pki/prisma
   changed_when: false
 ```
+
+The role then validates with the **openssl CLI** (cert/key public-key match +
+`openssl verify` chain) — no `community.crypto` collection required.
 
 **Manual verification**
 ```bash

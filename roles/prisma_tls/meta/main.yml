@@ -1,10 +1,11 @@
 ---
-# Requires collections: community.crypto (x509_certificate_info,
-# openssl_privatekey_info). Pinned in requirements.yml.
+# No external collections required. Cert/key/chain validation uses the openssl
+# CLI (FIPS-validated) rather than community.crypto, so the role works in a thin
+# air-gapped EE. Vault fetch (optional) uses the builtin ansible.builtin.uri.
 galaxy_info:
   role_name: prisma_tls
   author: Chaitanya Nampalli
-  description: Stage internal-CA-issued TLS material for Prisma Console
+  description: Stage internal-CA-issued TLS material for Prisma Console (files / survey / Vault)
   license: internal
   min_ansible_version: "2.15"
 dependencies: []
