@@ -25,11 +25,13 @@ This role has no `defaults/main.yml`. It consumes, from
 
 ## Dependencies
 
-- **Ansible collections:**
-  - `community.general` — `sefcontext` module.
+- **Ansible collections:** none. SELinux labelling uses the `semanage` CLI via
+  `ansible.builtin.command` (not `community.general.sefcontext`), because the
+  air-gapped EE does not ship `community.general` and operators cannot add it.
 - **Role order:** must run after `rhel_baseline` (installs
-  `policycoreutils-python-utils` for `restorecon`/`sefcontext`) and before
-  `prisma_stage` — the Console needs the data mount present before first start.
+  `policycoreutils-python-utils`, which provides `semanage`/`restorecon`) and
+  before `prisma_stage` — the Console needs the data mount present before first
+  start.
 - **Operator / platform prerequisite:** the data volume must already be mounted
   at `prisma_data_folder` as XFS (not NFS) when the role runs. The role fails
   fast with remediation guidance if it is missing.
