@@ -64,6 +64,35 @@
   notify: Reload sshd
   tags: [sshd]
 
+- name: Assert admin password-auth CIDR is set when the exception is enabled
+  ansible.builtin.assert:
+    that: rhel_baseline_password_auth_cidr | length > 0
+    fail_msg: >-
+      rhel_baseline_password_auth_exception=true requires
+      rhel_baseline_password_auth_cidr (the admin source network, e.g. 10.0.0.0/8).
+  when: rhel_baseline_password_auth_exception | bool
+  tags: [sshd]
+
+- name: Manage scoped admin password-auth exception drop-in
+  ansible.builtin.template:
+    src: 50-prisma-admin-password.conf.j2
+    dest: /etc/ssh/sshd_config.d/50-prisma-admin-password.conf
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "sshd -t -f %s"
+  when: rhel_baseline_password_auth_exception | bool
+  notify: Reload sshd
+  tags: [sshd]
+
+- name: Remove admin password-auth exception drop-in when disabled
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config.d/50-prisma-admin-password.conf
+    state: absent
+  when: not (rhel_baseline_password_auth_exception | bool)
+  notify: Reload sshd
+  tags: [sshd]
+
 - name: Allow firewalld ports
   ansible.posix.firewalld:
     port: "{{ item }}"

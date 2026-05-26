@@ -35,3 +35,17 @@ argument_specs:
         type: list
         elements: str
         description: "Internal NTP sources for chrony time sync."
+      rhel_baseline_password_auth_exception:
+        type: bool
+        description: >-
+          Opt-in: re-enable SSH password auth only for the admin source network
+          (and optional group) via a Match-block drop-in. Default false keeps the
+          hardened PasswordAuthentication no globally.
+      rhel_baseline_password_auth_cidr:
+        type: str
+        description: >-
+          Admin source network (CIDR) the password exception applies to, e.g.
+          '10.0.0.0/8'. Required when rhel_baseline_password_auth_exception is true.
+      rhel_baseline_password_auth_group:
+        type: str
+        description: "Optional group to further scope the password exception (Match Group)."

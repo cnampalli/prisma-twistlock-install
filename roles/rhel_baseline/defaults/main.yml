@@ -65,3 +65,13 @@ rhel_baseline_disable_thp: true
 # rsyslog ships. Keep-free reserves headroom so journald does not fill /var.
 rhel_baseline_journald_max_use: "2G"
 rhel_baseline_journald_keep_free: "1G"
+
+# Admin password-auth exception. SECURE DEFAULT: off — password SSH stays
+# globally disabled (the "Harden sshd" task sets PasswordAuthentication no).
+# When true, a Match-block drop-in re-enables password auth ONLY for the admin
+# source network (and optional group) — for jump-host / MobaXterm admin access
+# where keys or Kerberos aren't used. This loosens the hardened baseline; enable
+# per environment in group_vars and scope the CIDR as tightly as you can.
+rhel_baseline_password_auth_exception: false
+rhel_baseline_password_auth_cidr: ""          # e.g. "10.0.0.0/8" (admin/jump network)
+rhel_baseline_password_auth_group: ""         # optional, e.g. "linux-admins"
