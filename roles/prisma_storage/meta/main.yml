@@ -5,7 +5,7 @@
 galaxy_info:
   role_name: prisma_storage
   author: Chaitanya Nampalli
-  description: Verify the Prisma Console data volume is mounted; SELinux-label it for container bind-mount
+  description: Ensure the Prisma Console data folder exists; SELinux-label it for container bind-mount
   license: internal
   min_ansible_version: "2.15"
 dependencies: []

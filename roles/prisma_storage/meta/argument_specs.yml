@@ -1,11 +1,18 @@
 ---
 argument_specs:
   main:
-    short_description: "Verify the Console data volume is mounted and apply its SELinux container label."
+    short_description: "Ensure the Console data folder exists and apply its SELinux container label."
     options:
       prisma_data_folder:
         type: str
         description: >-
-          Mount point the platform/DC team provisions for the Console's
-          persistent data. The role asserts it is a dedicated XFS mount
-          (not NFS) and labels it container_file_t; it does not create it.
+          Directory for the Console's persistent data (e.g. /var/lib/twistlock).
+          The role ensures it exists and labels it container_file_t. Must be an
+          absolute, dedicated path at least two levels deep — not a system
+          directory (see prisma_storage_unsafe_paths).
+      prisma_storage_unsafe_paths:
+        type: list
+        elements: str
+        description: >-
+          Denylist of paths prisma_data_folder may not be, to stop a
+          misconfigured value from relabelling the system with container_file_t.

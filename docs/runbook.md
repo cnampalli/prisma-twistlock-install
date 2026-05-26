@@ -297,33 +297,38 @@ journalctl --disk-usage
 
 ---
 
-### Phase 4 — Storage: verify the data volume + SELinux label `[A]`
+### Phase 4 — Storage: ensure the data folder + SELinux label `[A]`
 
-**Objective:** confirm `/var/lib/twistlock` is the mounted data volume and
-label it for podman. The platform/DC team provisions and mounts the volume
-(XFS, not NFS) at handover — see Phase 1 — so Ansible no longer creates the
-VG/LV/filesystem/mount; it verifies them and applies the SELinux context.
+**Objective:** ensure `/var/lib/twistlock` exists and is labelled for podman.
+The role does **not** create or require a dedicated mount — whether the data
+folder is its own filesystem is the platform/DC team's choice. If a dedicated
+data volume exists, mount it at `/var/lib/twistlock` before this runs (see
+Phase 1); otherwise the role just creates the directory on the existing fs.
 
 **What Ansible does** (role: `prisma_storage`)
 ```yaml
-- name: Check whether the data folder is a mountpoint
-  ansible.builtin.command: findmnt -n -o FSTYPE,OPTIONS,SOURCE /var/lib/twistlock
-  register: data_mount
-  changed_when: false
-  failed_when: false
-
-- name: Assert the data folder is a dedicated XFS mount, not NFS
+# GUARD: refuse to run on an unsafe prisma_data_folder (/, /var, /etc, …) so a
+# misconfigured value can never stamp container_file_t across the system.
+- name: Validate prisma_data_folder is a safe, dedicated path
   ansible.builtin.assert:
     that:
-      - data_mount.rc == 0
-      - "'xfs' in data_mount.stdout"
-      - "'nfs' not in data_mount.stdout"
+      - (prisma_data_folder | default('')).startswith('/')
+      - (prisma_data_folder | default('')) not in prisma_storage_unsafe_paths
+      - ((prisma_data_folder | default('')) | regex_replace('/+$','')).split('/') | length >= 3
 
+- name: Ensure the data folder exists
+  ansible.builtin.file:
+    path: /var/lib/twistlock
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+# SELinux fcontext via the semanage CLI (community.general not available in the
+# air-gapped EE). semanage from policycoreutils-python-utils (rhel_baseline).
 - name: SELinux fcontext for data dir
-  community.general.sefcontext:
-    target: '/var/lib/twistlock(/.*)?'
-    setype: container_file_t
-    state: present
+  ansible.builtin.command: semanage fcontext -a -t container_file_t '/var/lib/twistlock(/.*)?'
+  # idempotent: tolerate "already defined"
 
 - name: Relabel
   ansible.builtin.command: restorecon -R /var/lib/twistlock
@@ -333,16 +338,15 @@ VG/LV/filesystem/mount; it verifies them and applies the SELinux context.
 **Manual verification**
 ```bash
 # [M]
-df -hT /var/lib/twistlock
-ls -Zd /var/lib/twistlock
-findmnt /var/lib/twistlock    # confirm xfs and NOT nfs
+ls -Zd /var/lib/twistlock     # context shows container_file_t
+df -hT /var/lib/twistlock     # confirm capacity (dedicated volume optional)
 ```
 
 **Acceptance criteria (Phase 4)**
-- `/var/lib/twistlock` is a dedicated XFS mount (provided by the DC team),
-  NOT NFS, labelled `container_file_t`. Mount creation, sizing, and options
-  (`noatime`/`inode64`) are the platform team's responsibility and are no
-  longer asserted by the role.
+- `/var/lib/twistlock` exists and is labelled `container_file_t` (NOT NFS).
+  A dedicated mount is recommended for capacity/IO isolation but not required
+  or asserted. `prisma_data_folder` must be a safe dedicated path — the role
+  refuses to label a system directory.
 
 ---
 
