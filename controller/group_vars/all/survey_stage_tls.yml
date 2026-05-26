@@ -1,0 +1,31 @@
+---
+# Survey for the prisma-site job template: supplies the Console TLS material as
+# inline PEM when there is no control-node files/ dir (AAP EE). The prisma_tls
+# role writes these to /etc/pki/prisma and validates them. The site run is
+# operator-launched, so values are entered at launch.
+#
+# NOTE on the private key: AAP survey `password` fields are single-line, but a
+# PEM key is multi-line — so the key uses `textarea` like the cert/CA. That means
+# the key is stored as a job extra_var (visible to those with job-edit access),
+# not masked. `no_log: true` keeps it out of task output, and RBAC should limit
+# template access. For a properly masked secret, use the role's Vault source
+# (prisma_tls_vault_*) instead — that's exactly what the seam is for.
+survey_stage_tls:
+  name: "Console TLS material"
+  description: "Operator-supplied PEM cert/key/CA for the Console (prisma_tls)."
+  spec:
+    - question_name: "Console certificate (PEM)"
+      question_description: "Full PEM certificate, -----BEGIN CERTIFICATE----- … END."
+      variable: prisma_cert_content
+      type: textarea
+      required: true
+    - question_name: "CA chain (PEM)"
+      question_description: "Issuing/intermediate CA chain in PEM order."
+      variable: prisma_ca_chain_content
+      type: textarea
+      required: true
+    - question_name: "Console private key (PEM) — sensitive"
+      question_description: "PEM private key matching the certificate. Prefer the Vault source for this."
+      variable: prisma_key_content
+      type: textarea
+      required: true

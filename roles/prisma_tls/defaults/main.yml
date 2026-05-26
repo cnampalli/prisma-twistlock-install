@@ -1,0 +1,28 @@
+---
+# Where prisma_tls gets the Console cert/key/CA. Auto-detected unless set
+# explicitly:
+#   prisma_tls_vault_addr set  -> vault    (HashiCorp Vault Enterprise, KV v2)
+#   prisma_cert_content set    -> content  (inline PEM via AAP survey or -e)
+#   otherwise                  -> files    (control-node files/ ; local dev + molecule)
+prisma_tls_cert_source: "auto"   # auto | files | content | vault
+
+# content source — PEM blobs supplied at launch (survey field or -e). Empty here;
+# never commit real certs/keys.
+prisma_cert_content: ""
+prisma_key_content: ""
+prisma_ca_chain_content: ""
+
+# vault source (HashiCorp Vault Enterprise, KV v2). INERT until addr is set.
+# Fetched with the builtin ansible.builtin.uri module + token auth — no
+# community.hashi_vault collection required. Wire the token (survey field or AAP
+# credential) when adopting this path.
+prisma_tls_vault_addr: ""          # e.g. https://vault.internal:8200
+prisma_tls_vault_path: ""          # KV v2 read API path, e.g. v1/secret/data/prisma/console
+prisma_tls_vault_token: ""         # X-Vault-Token
+prisma_tls_vault_cert_field: "console.crt"
+prisma_tls_vault_key_field: "console.key"
+prisma_tls_vault_ca_field: "ca-chain.crt"
+prisma_tls_vault_validate_certs: true
+
+# Validate the staged cert/key/chain with the openssl CLI (no collection).
+prisma_tls_validate: true

@@ -220,7 +220,7 @@ settings for **all** of them:
 | `prisma-00-baseline (Phases 2-4)` | `playbooks/00-baseline.yml` | — | — |
 | `prisma-10-podman (Phase 5)` | `playbooks/10-podman.yml` | — | — |
 | `prisma-11-docker (Phase 3b)` | `playbooks/11-docker.yml` | — | — |
-| `prisma-site (Phases 2-8)` | `playbooks/site.yml` | — | — |
+| `prisma-site (Phases 2-8)` | `playbooks/site.yml` | — | ✓ TLS material (B.9) |
 | `prisma-30-ops (Phase 10)` | `playbooks/30-prisma-ops.yml` | — | ✓ backup secrets (B.9) |
 | `prisma-40-dr-drill` | `playbooks/40-dr-drill.yml` | — | ✓ DR + restore secrets (B.9) |
 
@@ -275,6 +275,22 @@ with **no default**.
 Empty restore source = latest backup by mtime; otherwise the full path to a
 specific tarball.
 
+**B.9c — `prisma-site` TLS material.** Because the EE has no control-node
+`files/` dir, the Console cert/key/CA are supplied as inline PEM. Open
+`prisma-site (Phases 2-8)` → **Survey** → add three questions, then toggle **On**:
+
+| Prompt | Variable | Type | Required |
+| --- | --- | --- | --- |
+| Console certificate (PEM) | `prisma_cert_content` | Textarea | ✓ |
+| CA chain (PEM) | `prisma_ca_chain_content` | Textarea | ✓ |
+| Console private key (PEM) | `prisma_key_content` | Textarea | ✓ |
+
+Paste the full PEM blocks. The key uses **Textarea** (not Password) because AAP
+password fields are single-line and a PEM key is multi-line — so it lands as a job
+extra_var rather than masked. `prisma_tls` writes it with `no_log`, but for a
+properly masked secret use the role's **Vault source** (`prisma_tls_vault_*`)
+instead. For a local CLI run, pass the same vars via `-e @certs.yml`.
+
 > **If you took the optional §B.3 path:** omit the **Password** questions above
 > (`prisma_backup_token`, `prisma_restore_api_password`) and the
 > `internal_backup_url` / `prisma_restore_api_user` questions — those values come
@@ -294,6 +310,7 @@ If you ever reconcile the UI against the repo:
 | Credentials | `controller_credentials.yml` |
 | Job templates | `controller_job_templates.yml` |
 | Workflows | `controller_workflows.yml` |
+| TLS-material survey | `survey_stage_tls.yml` |
 | Backup-secrets survey | `survey_ops_backup.yml` |
 | DR survey | `survey_dr_drill.yml` |
 

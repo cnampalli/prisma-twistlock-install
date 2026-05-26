@@ -1,20 +1,58 @@
 ---
 argument_specs:
   main:
-    short_description: "Stage operator TLS cert/key/CA into the PKI dir and verify cert-key match and CA chain."
+    short_description: "Stage the Console TLS cert/key/CA (files, survey content, or Vault) and verify match + chain."
     options:
       prisma_pki_dir:
         type: str
         description: "Directory the Console TLS materials are staged into."
+      prisma_tls_cert_source:
+        type: str
+        description: >-
+          Cert source: auto|files|content|vault. auto picks vault if
+          vault_addr is set, else content if cert_content is set, else files.
+      prisma_cert_content:
+        type: str
+        description: "Inline PEM certificate (survey / -e). Used when source is content/vault."
+      prisma_key_content:
+        type: str
+        description: "Inline PEM private key (survey / -e). Used when source is content/vault."
+      prisma_ca_chain_content:
+        type: str
+        description: "Inline PEM CA chain (survey / -e). Used when source is content/vault."
+      prisma_tls_vault_addr:
+        type: str
+        description: "HashiCorp Vault base URL (e.g. https://vault.internal:8200). Empty = Vault disabled."
+      prisma_tls_vault_path:
+        type: str
+        description: "Vault KV v2 read API path, e.g. v1/secret/data/prisma/console."
+      prisma_tls_vault_token:
+        type: str
+        description: "Vault token (X-Vault-Token). Supply via survey field or AAP credential, never committed."
+      prisma_tls_vault_cert_field:
+        type: str
+        description: "KV field name holding the certificate PEM."
+      prisma_tls_vault_key_field:
+        type: str
+        description: "KV field name holding the private key PEM."
+      prisma_tls_vault_ca_field:
+        type: str
+        description: "KV field name holding the CA chain PEM."
+      prisma_tls_vault_validate_certs:
+        type: bool
+        description: "Validate Vault's TLS certificate when fetching."
+      prisma_tls_validate:
+        type: bool
+        description: "Run the openssl cert/key match + CA chain verification after staging."
       prisma_cert_src:
         type: str
-        description: "Source filename of the Console certificate under files/."
+        description: "Source filename of the Console certificate under files/ (files source)."
       prisma_key_src:
         type: str
-        description: "Source filename of the Console private key under files/."
+        description: "Source filename of the Console private key under files/ (files source)."
       prisma_ca_chain_src:
         type: str
-        description: "Source filename of the CA chain under files/."
+        description: "Source filename of the CA chain under files/ (files source)."
       prisma_cert_path:
         type: str
         description: "Destination path for the staged Console certificate."

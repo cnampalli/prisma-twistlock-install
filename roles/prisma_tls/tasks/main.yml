@@ -1,4 +1,17 @@
 ---
+# Cert source is pluggable (see defaults/main.yml): vault | content | files.
+# In an AAP execution environment there is no control-node files/ dir, so certs
+# arrive as inline content (survey / -e) or are fetched from Vault. files/ stays
+# the default for local CLI dev and the molecule/full scenario.
+- name: Resolve the effective TLS cert source
+  ansible.builtin.set_fact:
+    _prisma_tls_source: >-
+      {{ prisma_tls_cert_source
+         if prisma_tls_cert_source != 'auto'
+         else ('vault' if (prisma_tls_vault_addr | default('') | length > 0)
+               else ('content' if (prisma_cert_content | default('') | length > 0)
+                     else 'files')) }}
+
 - name: Ensure PKI dir
   ansible.builtin.file:
     path: "{{ prisma_pki_dir }}"
@@ -7,7 +20,54 @@
     group: root
     mode: "0750"
 
-- name: Stage TLS materials
+- name: Fetch TLS materials from HashiCorp Vault (KV v2, builtin uri + token)
+  when: _prisma_tls_source == 'vault'
+  block:
+    - name: Read the Vault KV secret
+      ansible.builtin.uri:
+        url: "{{ prisma_tls_vault_addr }}/{{ prisma_tls_vault_path }}"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ prisma_tls_vault_token }}"
+        validate_certs: "{{ prisma_tls_vault_validate_certs | bool }}"
+        return_content: true
+      register: _vault_resp
+      no_log: true
+
+    - name: Map Vault fields to cert content
+      ansible.builtin.set_fact:
+        prisma_cert_content: "{{ _vault_resp.json.data.data[prisma_tls_vault_cert_field] }}"
+        prisma_key_content: "{{ _vault_resp.json.data.data[prisma_tls_vault_key_field] }}"
+        prisma_ca_chain_content: "{{ _vault_resp.json.data.data[prisma_tls_vault_ca_field] }}"
+      no_log: true
+
+- name: Assert inline cert content is provided
+  ansible.builtin.assert:
+    that:
+      - prisma_cert_content | default('') | length > 0
+      - prisma_key_content | default('') | length > 0
+      - prisma_ca_chain_content | default('') | length > 0
+    fail_msg: >-
+      prisma_tls_cert_source=content requires prisma_cert_content,
+      prisma_key_content and prisma_ca_chain_content (supply via the job-template
+      survey, or -e @certs.yml for a local CLI run).
+  when: _prisma_tls_source == 'content'
+
+- name: Stage TLS materials from inline content (survey / vault)
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { content: "{{ prisma_cert_content }}", dest: "{{ prisma_cert_path }}", mode: "0600" }
+    - { content: "{{ prisma_key_content }}", dest: "{{ prisma_cert_key_path }}", mode: "0600" }
+    - { content: "{{ prisma_ca_chain_content }}", dest: "{{ prisma_cert_ca_path }}", mode: "0644" }
+  no_log: true
+  when: _prisma_tls_source in ['content', 'vault']
+
+- name: Stage TLS materials from files/ (local dev + molecule)
   ansible.builtin.copy:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
@@ -19,29 +79,35 @@
     - { src: "{{ prisma_key_src }}", dest: "{{ prisma_cert_key_path }}", mode: "0600" }
     - { src: "{{ prisma_ca_chain_src }}", dest: "{{ prisma_cert_ca_path }}", mode: "0644" }
   no_log: true
+  when: _prisma_tls_source == 'files'
 
 - name: Restore SELinux context on PKI dir
   ansible.builtin.command: "restorecon -R {{ prisma_pki_dir }}"
   changed_when: false
 
-- name: Inspect certificate
-  community.crypto.x509_certificate_info:
-    path: "{{ prisma_cert_path }}"
-  register: cert_info
+# Validation uses the openssl CLI (FIPS-validated, no collection) rather than
+# community.crypto, so prisma_tls has no collection dependency in a thin EE.
+- name: Validate the staged cert/key/chain
+  when: prisma_tls_validate | bool
+  block:
+    - name: Extract the certificate public key
+      ansible.builtin.command: "openssl x509 -in {{ prisma_cert_path }} -noout -pubkey"
+      register: _cert_pub
+      changed_when: false
 
-- name: Inspect private key
-  community.crypto.openssl_privatekey_info:
-    path: "{{ prisma_cert_key_path }}"
-  register: key_info
-  no_log: true
+    - name: Extract the private key's public key
+      ansible.builtin.command: "openssl pkey -in {{ prisma_cert_key_path }} -pubout"
+      register: _key_pub
+      changed_when: false
+      no_log: true
 
-- name: Assert cert and key match
-  ansible.builtin.assert:
-    that: cert_info.public_key == key_info.public_key
-    fail_msg: "TLS cert and key public keys do not match"
+    - name: Assert cert and key match
+      ansible.builtin.assert:
+        that: _cert_pub.stdout == _key_pub.stdout
+        fail_msg: "TLS cert and key public keys do not match."
 
-- name: Verify cert chains to supplied CA
-  ansible.builtin.command: "openssl verify -CAfile {{ prisma_cert_ca_path }} {{ prisma_cert_path }}"
-  register: cert_verify
-  changed_when: false
-  failed_when: "'OK' not in cert_verify.stdout"
+    - name: Verify cert chains to the supplied CA
+      ansible.builtin.command: "openssl verify -CAfile {{ prisma_cert_ca_path }} {{ prisma_cert_path }}"
+      register: _cert_verify
+      changed_when: false
+      failed_when: "'OK' not in _cert_verify.stdout"
