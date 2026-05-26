@@ -23,11 +23,19 @@
       mount the Console data volume at {{ prisma_data_folder }}.
     success_msg: "{{ prisma_data_folder }} is mounted XFS: {{ data_mount.stdout }}"
 
-- name: Register SELinux fcontext for data folder
-  community.general.sefcontext:
-    target: '{{ prisma_data_folder }}(/.*)?'
-    setype: container_file_t
-    state: present
+# SELinux labelling uses the semanage CLI directly rather than
+# community.general.sefcontext: the target air-gapped EE does not ship the
+# community.general collection and operators cannot add it. semanage is provided
+# by policycoreutils-python-utils, installed by rhel_baseline. `-a` errors if the
+# rule already exists, so we tolerate "already defined" for idempotency.
+- name: Ensure SELinux fcontext for the data folder (semanage; no collection needed)
+  ansible.builtin.command:
+    cmd: "semanage fcontext -a -t container_file_t '{{ prisma_data_folder }}(/.*)?'"
+  register: prisma_sefcontext
+  changed_when: prisma_sefcontext.rc == 0
+  failed_when:
+    - prisma_sefcontext.rc != 0
+    - "'already defined' not in (prisma_sefcontext.stderr | default(''))"
 
 - name: Apply SELinux labels
   ansible.builtin.command: "restorecon -R {{ prisma_data_folder }}"

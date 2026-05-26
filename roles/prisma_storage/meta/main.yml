@@ -1,6 +1,7 @@
 ---
-# Requires collections: community.general (sefcontext).
-# Pinned in requirements.yml.
+# No external collections required. SELinux labelling uses the semanage CLI
+# (policycoreutils-python-utils, installed by rhel_baseline) instead of
+# community.general.sefcontext, because the air-gapped EE does not ship it.
 galaxy_info:
   role_name: prisma_storage
   author: Chaitanya Nampalli
