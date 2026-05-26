@@ -23,6 +23,9 @@ From `roles/rhel_baseline/defaults/main.yml`:
 | `rhel_baseline_disable_thp` | `true` | Install + enable a systemd oneshot that writes `never` to `/sys/kernel/mm/transparent_hugepage/{enabled,defrag}`. Required by MongoDB (embedded in Console). |
 | `rhel_baseline_journald_max_use` | `2G` | `SystemMaxUse=` for journald. |
 | `rhel_baseline_journald_keep_free` | `1G` | `SystemKeepFree=` for journald. |
+| `rhel_baseline_password_auth_exception` | `false` | Opt-in. The baseline disables SSH password auth globally (`PasswordAuthentication no`). When `true`, a `Match`-block drop-in (`/etc/ssh/sshd_config.d/50-prisma-admin-password.conf`) re-enables password auth **only** for the admin source network below — for jump-host/MobaXterm admin access with AD credentials. Loosens the baseline; keys/Kerberos preferred where feasible. |
+| `rhel_baseline_password_auth_cidr` | `""` | Admin source network (CIDR) the password exception applies to, e.g. `10.0.0.0/8`. **Required** when the exception is enabled; scope it as tightly as you can. |
+| `rhel_baseline_password_auth_group` | `""` | Optional — further restrict the exception to a group (`Match … Group`). |
 
 Also consumes, from `group_vars/prisma_console.yml`: `prisma_https_port`,
 `prisma_comm_port`, `ntp_servers`.

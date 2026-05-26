@@ -246,6 +246,14 @@ update-crypto-policies --show     # FIPS
 3. Enable and start `chronyd`, `firewalld`, `auditd`, `rsyslog`.
 4. Render `/etc/chrony.conf` pointing at internal NTP sources.
 5. Harden `/etc/ssh/sshd_config`: `PermitRootLogin no`, `PasswordAuthentication no`, `PubkeyAuthentication yes`. Reload sshd.
+   - **Admin password exception (opt-in, off by default):** these hosts otherwise
+     accept only `publickey`/`gssapi`, so admin tooling that uses AD
+     username+password (e.g. MobaXterm) cannot connect. Set
+     `rhel_baseline_password_auth_exception: true` + `rhel_baseline_password_auth_cidr`
+     (admin/jump CIDR) to drop a `Match Address` block in
+     `/etc/ssh/sshd_config.d/50-prisma-admin-password.conf` that re-enables password
+     auth **only** from that network. The global `no` is unchanged for everyone else.
+     This loosens the baseline — scope the CIDR tightly; prefer keys/Kerberos where feasible.
 6. Configure firewalld ports:
    ```yaml
    - { port: 8083/tcp, state: enabled }

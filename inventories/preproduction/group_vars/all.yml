@@ -18,3 +18,11 @@
 # environment (RHEL 9 base). The RHEL 8 control-node CLI default
 # (/usr/libexec/platform-python) stays pinned in ansible.cfg.
 ansible_python_interpreter: auto_silent
+
+# Admin password-auth exception (loosens the hardened baseline). Admins reach
+# these hosts via MobaXterm with AD username/password; password SSH is otherwise
+# disabled by rhel_baseline. Scoped to the admin source network below — TIGHTEN
+# this CIDR to your real jump/admin subnet. Set the exception false for
+# key/Kerberos-only hosts.
+rhel_baseline_password_auth_exception: true
+rhel_baseline_password_auth_cidr: "10.0.0.0/8"
