@@ -1,0 +1,29 @@
+---
+# Paths the storage role must NEVER apply container_file_t + restorecon to.
+# prisma_data_folder is rejected (fail-fast) if it equals one of these, is not
+# absolute, or is shallower than two levels deep. Guard against a misconfigured
+# value (e.g. "/var") relabelling the whole system and breaking SELinux-confined
+# services. Override only if you really know what you are doing.
+prisma_storage_unsafe_paths:
+  - /
+  - /var
+  - /var/lib
+  - /var/log
+  - /var/run
+  - /etc
+  - /usr
+  - /usr/lib
+  - /boot
+  - /home
+  - /root
+  - /opt
+  - /srv
+  - /run
+  - /tmp
+  - /bin
+  - /sbin
+  - /lib
+  - /lib64
+  - /dev
+  - /proc
+  - /sys

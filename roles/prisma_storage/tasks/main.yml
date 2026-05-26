@@ -1,27 +1,37 @@
 ---
-# The platform/DC team provisions and mounts the Console data volume at
-# {{ prisma_data_folder }} before handover. This role does NOT create the
-# VG/LV/filesystem/mount — it only verifies the mount is present and applies
-# the SELinux container label that rootful podman bind-mounts require.
+# The Console data volume lives at {{ prisma_data_folder }}. This role ensures
+# that directory exists and applies the SELinux container label that rootful
+# podman bind-mounts require. It does NOT create or require a dedicated mount —
+# whether {{ prisma_data_folder }} is its own filesystem is the platform/DC
+# team's choice; the role works either way.
 
-- name: Check whether the data folder is a mountpoint
-  ansible.builtin.command: "findmnt -n -o FSTYPE,OPTIONS,SOURCE {{ prisma_data_folder }}"
-  register: data_mount
-  changed_when: false
-  failed_when: false
-
-- name: Assert the data folder is a dedicated XFS mount, not NFS
+# GUARD: refuse to run if prisma_data_folder is missing, relative, a system
+# directory, or too shallow. Without this, a misconfigured value (e.g. "/var")
+# makes the semanage + restorecon below stamp container_file_t across the system
+# and break every SELinux-confined service (SSSD, etc.). Fail fast instead.
+- name: Validate prisma_data_folder is a safe, dedicated path
   ansible.builtin.assert:
     that:
-      - data_mount.rc == 0
-      - "'xfs' in data_mount.stdout"
-      - "'nfs' not in data_mount.stdout"
+      - (prisma_data_folder | default('')) is string
+      - (prisma_data_folder | default('')) | length > 0
+      - (prisma_data_folder | default('')).startswith('/')
+      - (prisma_data_folder | default('')) not in prisma_storage_unsafe_paths
+      - ((prisma_data_folder | default('')) | regex_replace('/+$', '')).split('/') | length >= 3
     fail_msg: >-
-      {{ prisma_data_folder }} must be a dedicated XFS mount provisioned by the
-      platform/DC team before handover (findmnt rc={{ data_mount.rc }},
-      output: '{{ data_mount.stdout }}'). Ask them to attach, format XFS, and
-      mount the Console data volume at {{ prisma_data_folder }}.
-    success_msg: "{{ prisma_data_folder }} is mounted XFS: {{ data_mount.stdout }}"
+      Refusing to run: prisma_data_folder='{{ prisma_data_folder | default('<undefined>') }}'
+      must be an absolute, dedicated path at least two levels deep
+      (e.g. /var/lib/twistlock) and must not be a system directory. Applying
+      container_file_t + restorecon to a broad path mislabels the system and
+      breaks SELinux-confined services.
+    success_msg: "prisma_data_folder '{{ prisma_data_folder }}' is a safe, dedicated path."
+
+- name: Ensure the data folder exists
+  ansible.builtin.file:
+    path: "{{ prisma_data_folder }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
 
 # SELinux labelling uses the semanage CLI directly rather than
 # community.general.sefcontext: the target air-gapped EE does not ship the
