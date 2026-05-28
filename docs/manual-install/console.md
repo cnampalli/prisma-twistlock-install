@@ -243,10 +243,10 @@ cp /root/prisma/prisma_cloud_compute_edition_34_01_126.tar.gz.sha256 /opt/prisma
 
 cd /opt/prisma-install
 sha256sum -c prisma_cloud_compute_edition_34_01_126.tar.gz.sha256   # "OK"
-tar -xzf prisma_cloud_compute_edition_34_01_126.tar.gz
+tar -xzf prisma_cloud_compute_edition_34_01_126.tar.gz              # extracts flat into /opt/prisma-install/
 
-ls -la prisma_cloud_compute_edition_34_01_126/                       # expect twistlock.sh, twistcli, twistlock.cfg*, images/
-chmod 0750 prisma_cloud_compute_edition_34_01_126/twistlock.sh
+ls -la                                                              # expect twistlock.sh, linux/twistcli, twistlock.cfg*, images/
+chmod 0750 twistlock.sh
 ```
 
 ## Phase 8 — Render `twistlock.cfg` `[A]`
