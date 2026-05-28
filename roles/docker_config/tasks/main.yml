@@ -40,6 +40,16 @@
     state: started
     daemon_reload: true
 
+# Force the queued `Restart docker` handler (notified by the daemon.json /
+# override.conf renders above) to fire BEFORE the smoke test. Without this
+# the handler waits until end-of-play and `docker info` queries the stale
+# running daemon — which on a fresh host was started by dnf post-install
+# with package defaults (cgroupfs cgroup driver), so the assert fails on
+# the `'systemd' in docker_info.stdout` substring even though daemon.json
+# correctly sets native.cgroupdriver=systemd. See troubleshooting.md #10.
+- name: Flush handlers so docker picks up the new daemon.json before we smoke-test it
+  ansible.builtin.meta: flush_handlers
+
 - name: Smoke test docker config
   ansible.builtin.command: >-
     docker info --format

@@ -373,6 +373,59 @@ never trust "the right inventory file will have it."
 
 ---
 
+## 10. `docker_config` asserts `'systemd' in docker_info.stdout` but `docker info` reports `cgroupfs`
+
+**Symptom.** On a fresh scanner/sandbox install, `docker_config` fails at the
+"Assert docker runtime properties" task with:
+```
+fail_msg: docker info did not report expected config — check /etc/docker/daemon.json
+```
+`cat /etc/docker/daemon.json` shows `"exec-opts": ["native.cgroupdriver=systemd"]`
+correctly. The mismatch is between what the file says and what the running
+daemon reports:
+```bash
+$ sudo docker info --format '{{.Driver}} {{.CgroupDriver}} {{.SecurityOptions}}'
+overlay2 cgroupfs [name=seccomp,profile=builtin]
+                ^^^^^^^^^^
+                # daemon.json says systemd, daemon is on cgroupfs
+```
+
+**Root cause.** Classic Ansible handler-ordering pitfall. The role's flow:
+
+1. Render `daemon.json` → `notify: Restart docker` (handler queued, doesn't fire).
+2. Render `override.conf` → `notify: Restart docker` (queued, deduplicated).
+3. `systemd: state=started, daemon_reload=true` — `daemon_reload: true` only
+   reloads **systemd's view of unit files**, NOT the docker daemon's config.
+   If docker was already running (e.g. dnf's `docker-ce` post-install hook
+   started it with package defaults), this task is a no-op.
+4. Smoke test queries `docker info` against the **stale running daemon**
+   still on its initial cgroupfs/etc. defaults.
+5. Handler doesn't fire until end-of-play — too late.
+
+The `daemon.json` value is correct; the daemon never read it. journalctl
+shows no warnings because docker never *tried* to apply the new config.
+
+**Host fix.** Restart docker manually, then re-run:
+```bash
+sudo systemctl restart docker
+sudo docker info --format '{{.Driver}} {{.CgroupDriver}} {{.SecurityOptions}}'
+# expect: overlay2 systemd [name=seccomp,profile=builtin]
+ansible-playbook -i inventories/<env>/hosts.yml playbooks/11-docker.yml --tags docker_config
+```
+
+**Prevention (merged).** `roles/docker_config/tasks/main.yml` gained a
+`meta: flush_handlers` task between the systemd start task and the smoke
+test. This forces the queued `Restart docker` handler to fire **before**
+`docker info` runs, so the smoke test sees the post-restart config.
+
+**Lesson.** Any role that (a) renders a config file with `notify: Restart X`
+and (b) immediately asserts the live state of service X is exposed to this
+pitfall. The fix is always `meta: flush_handlers` between the renders and
+the asserts. Worth a code-search for the pattern across other roles
+(`prisma_systemd`, `podman_config`, etc.) as a follow-up.
+
+---
+
 ## Supporting changes made in the same effort
 
 - **Inventory** — removed placeholder `ansible_host` IPs from all
