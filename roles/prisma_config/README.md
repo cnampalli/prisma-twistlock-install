@@ -16,7 +16,7 @@ This role has no `defaults/main.yml`. It consumes, from
 
 | Variable | Default | Description |
 |---|---|---|
-| `prisma_extracted_dir` | `/opt/prisma-install/prisma_cloud_compute_edition_<ver>` | Directory the staged tarball was extracted into; target for `twistlock.cfg`. |
+| `prisma_extracted_dir` | `/opt/prisma-install` | Directory the staged tarball was extracted into (Palo Alto's tarball extracts flat); target for `twistlock.cfg`. |
 | `prisma_https_port` | `8083` | Console UI/API port, written into `twistlock.cfg`. |
 | `prisma_comm_port` | `8084` | Defender comms port. |
 | `prisma_data_folder` | `/var/lib/twistlock` | Persistent data bind-mount path. |

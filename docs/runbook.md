@@ -558,12 +558,12 @@ Either way the role drops `prisma_cloud_compute_edition_<ver>.tar.gz` and its `.
     src: /opt/prisma-install/prisma_cloud_compute_edition_34_01_126.tar.gz
     dest: /opt/prisma-install/
     remote_src: yes
-    creates: /opt/prisma-install/prisma_cloud_compute_edition_34_01_126/twistlock.sh
+    creates: /opt/prisma-install/twistlock.sh   # tarball extracts flat — no wrapper dir
 ```
 
 **Manual step — reconcile shipped field names** `[M]`
 ```bash
-cd /opt/prisma-install/prisma_cloud_compute_edition_34_01_126
+cd /opt/prisma-install
 ls -la
 grep -nE 'FIPS|DATA_FOLDER|MANAGEMENT_PORT|CUSTOM_CERT|CGROUP|MEMORY' twistlock.cfg*
 grep -nE 'fips|FIPS|--memory|systemctl|-s console' twistlock.sh
@@ -584,7 +584,7 @@ Record the **exact** field names used in the shipped `twistlock.cfg.example`. If
 **Objective:** produce the final configuration the installer will consume.
 
 **Automated (template)**
-Ansible renders `/opt/prisma-install/prisma_cloud_compute_edition_34_01_126/twistlock.cfg` from a Jinja template (see §12.1) using variables:
+Ansible renders `/opt/prisma-install/twistlock.cfg` from a Jinja template (see §12.1) using variables:
 ```yaml
 prisma_fips_enabled: true
 prisma_data_folder: /var/lib/twistlock

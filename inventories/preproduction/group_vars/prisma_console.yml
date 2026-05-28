@@ -7,7 +7,10 @@
 prisma_version: "34_01_126"                      # must match the operator-supplied tarball
 prisma_tarball_name: "prisma_cloud_compute_edition_{{ prisma_version }}.tar.gz"
 prisma_install_dir: "/opt/prisma-install"        # where the tarball is staged and extracted
-prisma_extracted_dir: "{{ prisma_install_dir }}/prisma_cloud_compute_edition_{{ prisma_version }}"
+# Palo Alto's tarball extracts flat into install_dir (twistlock.sh, twistlock.cfg*,
+# linux/twistcli all land directly in /opt/prisma-install). Override per host
+# if a future Prisma version ships with a wrapper subdirectory.
+prisma_extracted_dir: "{{ prisma_install_dir }}"
 prisma_data_folder: "/var/lib/twistlock"         # bind-mount for the Console's persistent data
 # Tarball source — setting prisma_stage_nexus_url switches prisma_stage from
 # files/ (control-node) to nexus (downloaded via get_url). Username/password

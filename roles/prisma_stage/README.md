@@ -34,7 +34,7 @@ Inventory `group_vars/prisma_console.yml` supplies the install-target vars:
 | `prisma_version` | `34_01_126` | Must match the operator-supplied tarball filename. |
 | `prisma_tarball_name` | `prisma_cloud_compute_edition_{{ prisma_version }}.tar.gz` | Used for both the files/ src and the Nexus path. |
 | `prisma_install_dir` | `/opt/prisma-install` | Target directory for staging and extraction. |
-| `prisma_extracted_dir` | `{{ prisma_install_dir }}/prisma_cloud_compute_edition_{{ prisma_version }}` | Extraction path asserted post-unarchive. |
+| `prisma_extracted_dir` | `{{ prisma_install_dir }}` | Path the installer's contents live at post-unarchive. Palo Alto's tarball extracts flat — override per host if a future version ships a wrapper subdirectory. |
 | `prisma_stage_source` | `auto` | `auto` \| `files` \| `nexus`. `auto` resolves to `nexus` when `prisma_stage_nexus_url` is set, otherwise `files`. |
 | `prisma_stage_nexus_url` | `""` | Base URL of the Nexus dir, e.g. `https://nexus.com.au/repository/prisma-packages/twistlock`. |
 | `prisma_stage_nexus_username` | `""` | Optional basic-auth user. Blank = anonymous read. |
