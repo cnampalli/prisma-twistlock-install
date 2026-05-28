@@ -81,12 +81,19 @@
   notify: Reload sshd
   tags: [sshd]
 
-- name: Assert admin password-auth CIDR is set when the exception is enabled
+- name: Assert admin password-auth CIDR list is non-empty when the exception is enabled
   ansible.builtin.assert:
-    that: rhel_baseline_password_auth_cidr | length > 0
+    that:
+      - rhel_baseline_password_auth_cidrs is defined
+      - rhel_baseline_password_auth_cidrs | length > 0
+      - rhel_baseline_password_auth_cidrs | reject('match', '^.+$') | list | length == 0
     fail_msg: >-
       rhel_baseline_password_auth_exception=true requires
-      rhel_baseline_password_auth_cidr (the admin source network, e.g. 10.0.0.0/8).
+      rhel_baseline_password_auth_cidrs (a non-empty LIST of admin source
+      networks, e.g. ["10.0.0.0/8", "172.16.0.0/12"]). List every CIDR that
+      legitimately needs password auth — admin LAN, jump-host network, AAP
+      EE outbound subnet, etc. An IP outside the list will fall through to
+      the global PasswordAuthentication no.
   when: rhel_baseline_password_auth_exception | bool
   tags: [sshd]
 

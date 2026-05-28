@@ -22,10 +22,14 @@ ansible_python_interpreter: auto_silent
 # Admin password-auth exception (loosens the hardened baseline). Admins reach
 # these hosts via MobaXterm with AD username/password; password SSH is otherwise
 # disabled by rhel_baseline. Scoped to the admin source network below — TIGHTEN
-# this CIDR to your real jump/admin subnet. Set the exception false for
-# key/Kerberos-only hosts.
+# this list to your real jump/admin subnet(s). Set the exception false for
+# key/Kerberos-only hosts. The Match Address line joins these CIDRs with ','
+# natively — list every legitimate source network (admin LAN, jump host,
+# AAP EE outbound subnet) or operators will hit troubleshooting.md #4 again
+# after the FIPS reboot from any unlisted IP.
 rhel_baseline_password_auth_exception: true
-rhel_baseline_password_auth_cidr: "10.0.0.0/8"
+rhel_baseline_password_auth_cidrs:
+  - "10.0.0.0/8"
 
 # Internal Nexus artifact repository. ONE Nexus server, ONE credential —
 # each role appends its own repo path (prisma_stage_nexus_path,

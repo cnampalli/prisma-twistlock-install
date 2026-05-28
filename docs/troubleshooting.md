@@ -133,11 +133,23 @@ it works before — use RSA ≥2048 or ECDSA for key auth on these hosts.)
 
 **Prevention (merged).** `rhel_baseline` gained an **opt-in, default-off scoped
 password exception**: when `rhel_baseline_password_auth_exception: true` (+
-`rhel_baseline_password_auth_cidr`), it drops a `Match Address` block in
+`rhel_baseline_password_auth_cidrs` — a **list** of CIDRs joined into sshd's
+`Match Address` line), it drops a `Match Address` block in
 `/etc/ssh/sshd_config.d/50-prisma-admin-password.conf` that re-enables password
-auth **only** from the admin network — the global `no` stays for everyone else.
+auth **only** from the listed networks — the global `no` stays for everyone else.
 (RHEL 8 `Include`s `sshd_config.d/*.conf` at the top of `sshd_config`, so the
 `Match` wins for matching connections.)
+
+**Update (merged).** Originally `rhel_baseline_password_auth_cidr` was a single
+string with one CIDR. That bit operators whose Ansible / MobaXterm source IP
+wasn't in the one admin range (e.g. AAP EE on a different subnet, jump host
+network, lab subnet) — they'd hit this exact issue *again* after the FIPS
+reboot and need a console login to unstick the playbook. The variable is now
+the plural `_cidrs` (list); list **every** legitimate source network in
+`inventories/<env>/group_vars/all.yml`. The role asserts the list is non-empty
+when the exception is enabled. If you set the singular form, the role will
+fail-fast with a clear migration message instead of silently rendering the
+wrong config.
 
 **Other ways in (no password):**
 - **SSH key** (FIPS-approved RSA/ECDSA — *not* Ed25519): generate locally

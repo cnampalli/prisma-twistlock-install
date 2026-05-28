@@ -24,7 +24,7 @@ From `roles/rhel_baseline/defaults/main.yml`:
 | `rhel_baseline_journald_max_use` | `2G` | `SystemMaxUse=` for journald. |
 | `rhel_baseline_journald_keep_free` | `1G` | `SystemKeepFree=` for journald. |
 | `rhel_baseline_password_auth_exception` | `false` | Opt-in. The baseline disables SSH password auth globally (`PasswordAuthentication no`). When `true`, a `Match`-block drop-in (`/etc/ssh/sshd_config.d/50-prisma-admin-password.conf`) re-enables password auth **only** for the admin source network below — for jump-host/MobaXterm admin access with AD credentials. Loosens the baseline; keys/Kerberos preferred where feasible. |
-| `rhel_baseline_password_auth_cidr` | `""` | Admin source network (CIDR) the password exception applies to, e.g. `10.0.0.0/8`. **Required** when the exception is enabled; scope it as tightly as you can. |
+| `rhel_baseline_password_auth_cidrs` | `[]` | **List** of admin source networks (CIDRs) the password exception applies to. Joined with `,` into sshd's `Match Address`. **Required, non-empty** when the exception is enabled; list every CIDR that legitimately needs password auth — admin LAN, jump-host network, AAP EE outbound subnet, etc. An IP outside the list falls through to the global `PasswordAuthentication no` (see troubleshooting.md #4). |
 | `rhel_baseline_password_auth_group` | `""` | Optional — further restrict the exception to a group (`Match … Group`). |
 
 Also consumes:
