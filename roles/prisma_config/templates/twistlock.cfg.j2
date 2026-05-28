@@ -1,6 +1,14 @@
 # Rendered by Ansible — prisma-twistlock-install / prisma_config
 # Reconcile field names against twistlock.cfg.orig (shipped) before install.
 
+# Suffix twistlock.sh appends to its bundled image names (it composes
+# e.g. twistlock/private:console${DOCKER_TWISTLOCK_TAG} at runtime). The
+# shipped image tarball loads as localhost/twistlock/private:console_<ver>,
+# so the suffix MUST match the version. Without this, twistlock.sh tries to
+# run twistlock/private:console (empty tag) and podman fails short-name
+# resolution against our hardened registries.conf.
+DOCKER_TWISTLOCK_TAG=_{{ prisma_version }}
+
 FIPS_ENABLED={{ prisma_fips_enabled | string | lower }}
 DATA_FOLDER={{ prisma_data_folder }}
 MANAGEMENT_PORT_HTTPS={{ prisma_https_port }}
