@@ -1,32 +1,45 @@
 ---
 argument_specs:
   main:
-    short_description: "Render twistlock.cfg into the extracted installer dir, preserving the shipped original."
+    short_description: "Seed twistlock.cfg from the shipped original, then overlay project-specific overrides."
     options:
       prisma_extracted_dir:
         type: str
         description: "Path to the extracted Prisma installer directory holding twistlock.cfg."
+      prisma_version:
+        type: str
+        description: "Installer version (e.g. 34_01_126); used to compose DOCKER_TWISTLOCK_TAG=_<ver>."
       prisma_fips_enabled:
         type: bool
-        description: "Whether FIPS mode is enabled; written as FIPS_ENABLED in twistlock.cfg."
+        description: "Whether FIPS mode is enabled; overlaid as FIPS_ENABLED."
       prisma_data_folder:
         type: str
-        description: "Console persistent-data folder; written as DATA_FOLDER."
+        description: "Console persistent-data folder; overlaid as DATA_FOLDER."
       prisma_https_port:
         type: int
-        description: "Console HTTPS UI/API port; written as MANAGEMENT_PORT_HTTPS."
+        description: "Console HTTPS UI/API port; overlaid as MANAGEMENT_PORT_HTTPS."
       prisma_comm_port:
         type: int
-        description: "Defender inbound comms port; written as COMMUNICATION_PORT."
+        description: "Defender inbound comms port; overlaid as COMMUNICATION_PORT."
       prisma_custom_cert:
         type: bool
-        description: "Whether a custom TLS cert is supplied; written as CUSTOM_CERT."
+        description: "Whether a custom TLS cert is supplied; overlaid as CUSTOM_CERT."
       prisma_cert_path:
         type: str
-        description: "Path to the custom Console certificate."
+        description: "Path to the custom Console certificate; overlaid as CUSTOM_CERT_PATH."
       prisma_cert_key_path:
         type: str
-        description: "Path to the custom Console private key."
+        description: "Path to the custom Console private key; overlaid as CUSTOM_CERT_KEY_PATH."
       prisma_cert_ca_path:
         type: str
-        description: "Path to the custom CA chain."
+        description: "Path to the custom CA chain; overlaid as CUSTOM_CERT_CA_PATH."
+      prisma_backup_dir:
+        type: str
+        description: "NFS-backed DR backup volume; overlaid as DATA_RECOVERY_VOLUME."
+      prisma_config_overrides:
+        type: dict
+        description: >-
+          Mapping of twistlock.cfg keys -> values to overlay onto the shipped
+          original via lineinfile. Defaults expand to a minimal air-gap baseline
+          (see defaults/main.yml). Append (do not replace) in group_vars to add
+          extra overrides.
