@@ -34,7 +34,13 @@ argument_specs:
       ntp_servers:
         type: list
         elements: str
-        description: "Internal NTP sources for chrony time sync."
+        required: true
+        description: >-
+          Internal NTP sources for chrony time sync. Required and must be
+          non-empty — the role asserts this before rendering /etc/chrony.conf,
+          because an empty list silently produces a conf with no `server`
+          entries and chrony cannot sync. Lives in group_vars/prisma_all.yml
+          so every Prisma host class inherits it.
       rhel_baseline_password_auth_exception:
         type: bool
         description: >-

@@ -2,4 +2,11 @@
 # Preproduction — shared non-secret overrides for ALL Prisma host classes
 # (console, scanner, sandbox). rhel_baseline knobs common to every class
 # belong here; class-specific values live in prisma_{console,scanner,sandbox}.yml.
-# Stub: all current baseline knobs are either class-specific or role defaults.
+
+# NTP sources (internal). Prisma requires time sync within 30s between Console
+# and Defenders, so chrony must point at the same internal NTP peers on every
+# host class — not just the Console. rhel_baseline asserts this list is
+# non-empty before rendering /etc/chrony.conf.
+ntp_servers:
+  - ntp1.internal
+  - ntp2.internal

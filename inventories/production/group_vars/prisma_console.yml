@@ -50,11 +50,6 @@ prisma_cert_ca_path: "{{ prisma_pki_dir }}/ca-chain.crt"
 # prisma_storage only verifies the mount and applies the SELinux container
 # label; it no longer creates the VG/LV/filesystem/mount.
 
-# NTP sources (internal). Prisma requires time sync within 30s of Defenders.
-ntp_servers:
-  - ntp1.internal
-  - ntp2.internal
-
 # Firewall source CIDRs. operator_cidr is the admin/support network;
 # defender_cidr is where deployed Defenders call home from. Override per
 # site in {primary,secondary}.yml if the two sites use different ranges.

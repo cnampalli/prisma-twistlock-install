@@ -315,6 +315,52 @@ the execution environment**, not from the install target.
 
 ---
 
+## 9. Scanner/sandbox chrony starts but never syncs — silent NTP miss
+
+**Symptom.** chronyd is `active (running)` on a scanner or sandbox host but
+`chronyc sources` shows zero peers (output: `MS Name/IP address` header with
+no rows, or `Number of sources = 0`). `timedatectl` reports
+`System clock synchronized: no`. Console-to-Defender time drift creeps past
+the 30-second contract Prisma requires; alerting may flag a Defender as
+unreachable purely because of clock skew. **No error appears in the playbook
+run — the install reports green.**
+
+**Root cause.** `rhel_baseline` runs on `hosts: prisma_all` (console +
+scanner + sandbox) and renders `/etc/chrony.conf` from a template that
+unconditionally loops over `ntp_servers`. The variable was historically
+defined only in `inventories/<env>/group_vars/prisma_console.yml`, so the
+Console host inherited a working list while scanner/sandbox got an empty
+Jinja loop → conf with no `server` lines → chronyd starts cleanly with
+nothing to sync against.
+
+**Host fix.** Re-render `/etc/chrony.conf` and restart chronyd:
+```bash
+ansible-playbook -i inventories/<env>/hosts.yml playbooks/00-baseline.yml \
+  --tags baseline,ntp --limit prisma_scanner:prisma_sandbox
+# Then on each host, confirm peers show up:
+chronyc sources
+timedatectl
+```
+
+**Prevention (merged).** Two coordinated edits:
+
+- `ntp_servers` relocated from `prisma_console.yml` to `prisma_all.yml`
+  across all three envs. The `prisma_all` scope is the canonical home for
+  rhel_baseline knobs shared by every host class — comment in the file
+  itself invites this use case.
+- `rhel_baseline` gained an `ansible.builtin.assert` immediately before the
+  chrony.conf template task, with `that: ntp_servers | length > 0` and a
+  clear `fail_msg` pointing the operator at `prisma_all.yml`. Future runs
+  with an empty/undefined list fail at the assert, not silently downstream.
+
+**Lesson.** A role that runs on multiple host classes and depends on a
+class-specific inventory var is a silent-failure waiting to happen. When
+adding any such role-required var, put it at the broadest applicable scope
+(`all.yml` or `prisma_all.yml`) and add a fail-fast assert in the role —
+never trust "the right inventory file will have it."
+
+---
+
 ## Supporting changes made in the same effort
 
 - **Inventory** — removed placeholder `ansible_host` IPs from all
