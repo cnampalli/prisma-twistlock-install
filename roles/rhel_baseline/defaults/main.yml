@@ -73,5 +73,11 @@ rhel_baseline_journald_keep_free: "1G"
 # where keys or Kerberos aren't used. This loosens the hardened baseline; enable
 # per environment in group_vars and scope the CIDR as tightly as you can.
 rhel_baseline_password_auth_exception: false
-rhel_baseline_password_auth_cidr: ""          # e.g. "10.0.0.0/8" (admin/jump network)
+# LIST of CIDRs the password exception applies to. sshd's Match Address
+# accepts a comma-separated list; the template joins this list with ','.
+# List every legitimate source network: admin/jump LAN, MobaXterm workstation
+# network, AAP EE outbound subnet, etc. A single-CIDR string here used to be
+# enough but bit operators whose Ansible/MobaXterm source IP didn't sit in
+# the one admin range — see troubleshooting.md entry #4.
+rhel_baseline_password_auth_cidrs: []         # e.g. ["10.0.0.0/8", "172.16.0.0/12"]
 rhel_baseline_password_auth_group: ""         # optional, e.g. "linux-admins"

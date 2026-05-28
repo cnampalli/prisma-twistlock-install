@@ -47,11 +47,17 @@ argument_specs:
           Opt-in: re-enable SSH password auth only for the admin source network
           (and optional group) via a Match-block drop-in. Default false keeps the
           hardened PasswordAuthentication no globally.
-      rhel_baseline_password_auth_cidr:
-        type: str
+      rhel_baseline_password_auth_cidrs:
+        type: list
+        elements: str
         description: >-
-          Admin source network (CIDR) the password exception applies to, e.g.
-          '10.0.0.0/8'. Required when rhel_baseline_password_auth_exception is true.
+          List of admin source networks (CIDRs) the password exception
+          applies to. Joined with ',' into sshd's Match Address line.
+          Required and non-empty when rhel_baseline_password_auth_exception
+          is true. Include every legitimate source network — admin LAN,
+          jump-host network, AAP EE outbound subnet, etc. — otherwise the
+          unlisted IPs fall through to the global PasswordAuthentication no
+          (see troubleshooting.md entry #4).
       rhel_baseline_password_auth_group:
         type: str
         description: "Optional group to further scope the password exception (Match Group)."

@@ -249,11 +249,14 @@ update-crypto-policies --show     # FIPS
    - **Admin password exception (opt-in, off by default):** these hosts otherwise
      accept only `publickey`/`gssapi`, so admin tooling that uses AD
      username+password (e.g. MobaXterm) cannot connect. Set
-     `rhel_baseline_password_auth_exception: true` + `rhel_baseline_password_auth_cidr`
-     (admin/jump CIDR) to drop a `Match Address` block in
-     `/etc/ssh/sshd_config.d/50-prisma-admin-password.conf` that re-enables password
-     auth **only** from that network. The global `no` is unchanged for everyone else.
-     This loosens the baseline — scope the CIDR tightly; prefer keys/Kerberos where feasible.
+     `rhel_baseline_password_auth_exception: true` + `rhel_baseline_password_auth_cidrs`
+     (a **list** of admin/jump CIDRs — include every legitimate source network:
+     admin LAN, jump host, AAP EE outbound subnet, etc.) to drop a `Match Address`
+     block in `/etc/ssh/sshd_config.d/50-prisma-admin-password.conf` that re-enables
+     password auth **only** from those networks. The global `no` is unchanged for
+     everyone else. This loosens the baseline — list source networks tightly;
+     prefer keys/Kerberos where feasible. (Singular `_cidr` was a single-CIDR
+     string in earlier releases; switch to the list form.)
 6. Configure firewalld ports:
    ```yaml
    - { port: 8083/tcp, state: enabled }
