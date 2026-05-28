@@ -3,6 +3,15 @@
 
 unqualified-search-registries = []
 
+# Per-image short-name aliases. twistlock.sh references the Console / Defender
+# images by short name (e.g. twistlock/private:console_<ver>); the tarball
+# loads them as localhost/twistlock/private:* . With unqualified-search empty,
+# we map just the twistlock/private repo prefix to its loaded localhost/ tag
+# so the installer can resolve images without weakening short-name security
+# for any other repo.
+[aliases]
+"twistlock/private" = "localhost/twistlock/private"
+
 [[registry]]
 location = "{{ podman_internal_registry }}"
 insecure = false
