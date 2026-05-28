@@ -18,7 +18,7 @@ The tarball can come from one of two places, auto-detected from
 | Source  | Trigger                                  | Where it reads from                                                   |
 |---------|------------------------------------------|------------------------------------------------------------------------|
 | `files` | `prisma_stage_nexus_url` is empty (default) | The play's `files/` search path on the control node. Used for local CLI dev and the molecule scenario. |
-| `nexus` | `prisma_stage_nexus_url` is set          | `{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}` + `.sha256` sidecar, via `ansible.builtin.get_url`. Used in AAP execution environments, which have no control-node `files/` dir. |
+| `nexus` | `prisma_stage_nexus_url` is set          | `{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}` + `.sha256` sidecar. Downloaded **on the controller / EE** via `delegate_to: localhost` (so the topology where the EE has Nexus reachability but the target VM does not still works), then pushed to the VM with `copy`. |
 
 You can force a source by setting `prisma_stage_source: files` or
 `prisma_stage_source: nexus` explicitly. The `nexus` source has zero
@@ -58,8 +58,10 @@ Inventory `group_vars/prisma_console.yml` supplies the install-target vars:
     `{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}`.
   - SHA-256 sidecar uploaded next to it at
     `{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}.sha256`.
-  - Nexus reachable from the EE / control node with valid TLS (or
-    `prisma_stage_nexus_validate_certs: false` in a lab).
+  - Nexus reachable from the **controller / EE** with valid TLS (or
+    `prisma_stage_nexus_validate_certs: false` in a lab). The target VM does
+    **not** need to reach Nexus — the role downloads on the controller and
+    pushes the artifact to the VM over SSH.
 
 ## Example usage
 

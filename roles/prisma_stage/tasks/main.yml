@@ -37,40 +37,80 @@
     mode: "0644"
   when: _prisma_stage_source == 'files'
 
-# Nexus path: download the tarball and its .sha256 sidecar with the builtin
-# get_url module — no community.* collection required in the EE. Basic auth is
-# optional (Nexus repos may be anonymous-read on the internal network);
-# url_username/url_password are omit-ted when blank so unauth requests work.
-- name: Stage Prisma tarball + SHA-256 from Nexus
+# Nexus path uses an EE-relay: download on the controller / execution
+# environment (which has Nexus reachability), then push to the target VM (which
+# in a hardened air-gap topology often does NOT). Without the relay,
+# get_url runs on the VM and fails with a connection error.
+#
+# Uses the builtin get_url module — no community.* collection required in the
+# EE. Basic auth is optional (Nexus repos may be anonymous-read on the
+# internal network); url_username/url_password are omit-ted when blank so
+# unauth requests work.
+- name: Stage Prisma tarball + SHA-256 from Nexus (EE-relay)
   when: _prisma_stage_source == 'nexus'
   block:
-    - name: Download Prisma tarball from Nexus
+    - name: Create a controller-side staging dir for the Nexus download
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: ".prisma-stage"
+      register: _ee_tmp
+      delegate_to: localhost
+      become: false
+      changed_when: false
+
+    - name: Download Prisma tarball from Nexus onto the controller / EE
       ansible.builtin.get_url:
         url: "{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}"
-        dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}"
+        dest: "{{ _ee_tmp.path }}/{{ prisma_tarball_name }}"
         url_username: "{{ prisma_stage_nexus_username | default(omit, true) }}"
         url_password: "{{ prisma_stage_nexus_password | default(omit, true) }}"
         force_basic_auth: "{{ (prisma_stage_nexus_username | default('') | length) > 0 }}"
         validate_certs: "{{ prisma_stage_nexus_validate_certs | bool }}"
         timeout: "{{ prisma_stage_nexus_timeout | int }}"
-        owner: root
-        group: root
         mode: "0600"
+      delegate_to: localhost
+      become: false
       no_log: true
 
-    - name: Download SHA-256 manifest from Nexus
+    - name: Download SHA-256 manifest from Nexus onto the controller / EE
       ansible.builtin.get_url:
         url: "{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}.sha256"
-        dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}.sha256"
+        dest: "{{ _ee_tmp.path }}/{{ prisma_tarball_name }}.sha256"
         url_username: "{{ prisma_stage_nexus_username | default(omit, true) }}"
         url_password: "{{ prisma_stage_nexus_password | default(omit, true) }}"
         force_basic_auth: "{{ (prisma_stage_nexus_username | default('') | length) > 0 }}"
         validate_certs: "{{ prisma_stage_nexus_validate_certs | bool }}"
         timeout: 60
+        mode: "0644"
+      delegate_to: localhost
+      become: false
+      no_log: true
+
+    - name: Push Prisma tarball from controller to target VM
+      ansible.builtin.copy:
+        src: "{{ _ee_tmp.path }}/{{ prisma_tarball_name }}"
+        dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Push SHA-256 manifest from controller to target VM
+      ansible.builtin.copy:
+        src: "{{ _ee_tmp.path }}/{{ prisma_tarball_name }}.sha256"
+        dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}.sha256"
         owner: root
         group: root
         mode: "0644"
-      no_log: true
+
+  always:
+    - name: Clean up the controller-side staging dir
+      ansible.builtin.file:
+        path: "{{ _ee_tmp.path }}"
+        state: absent
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      when: _ee_tmp.path is defined
 
 - name: Verify tarball integrity
   ansible.builtin.command: "sha256sum -c {{ prisma_tarball_name }}.sha256"

@@ -4,9 +4,14 @@
 #   prisma_stage_nexus_url set -> nexus  (download from internal Nexus repo)
 #   otherwise                  -> files  (control-node files/ ; local dev + molecule)
 #
-# The nexus path mirrors the prisma_tls vault path: zero collection dependency
-# (uses ansible.builtin.get_url), inert until configured, and operator-driven
-# at job launch via AAP survey/credential or `-e` for local CLI runs.
+# The nexus path uses an EE-relay: the download (get_url) runs on the
+# controller / execution environment via delegate_to: localhost, then the file
+# is pushed to the target VM with copy. This handles the common hardened
+# topology where the EE has Nexus reachability but the target VM does not.
+#
+# Zero collection dependency (uses ansible.builtin.get_url + copy), inert
+# until configured, operator-driven at job launch via AAP survey/credential
+# or `-e` for local CLI runs.
 prisma_stage_source: "auto"            # auto | files | nexus
 
 # nexus source — base URL of the directory holding the tarball, e.g.
