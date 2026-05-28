@@ -1,0 +1,38 @@
+---
+# Survey for the prisma-site job template: supplies the Nexus URL + (optional)
+# basic-auth credentials that prisma_stage uses to download the Prisma tarball.
+# In an AAP EE there is no control-node files/ dir, so the EE pulls the
+# tarball directly from Nexus. For local CLI runs the equivalent is
+# `-e prisma_stage_nexus_url=… -e @local-secrets.yml`.
+#
+# NOTE: the survey `password` field IS masked (single-line, hidden in job
+# output) — unlike survey_stage_tls's textarea key, which is the trade-off
+# documented over there. The Path A alternative is the `Prisma Nexus`
+# credential type in controller_credential_types.yml (needs superuser).
+survey_stage_nexus:
+  name: "Nexus tarball source"
+  description: "Internal Nexus repo to download the Prisma installer tarball from (prisma_stage)."
+  spec:
+    - question_name: "Nexus base URL"
+      question_description: >-
+        Base URL of the Nexus directory holding the tarball, no trailing slash,
+        e.g. https://nexus.com.au/repository/prisma-packages/twistlock. The role
+        appends /{{ prisma_tarball_name }} and .sha256.
+      variable: prisma_stage_nexus_url
+      type: text
+      required: true
+      default: "https://nexus.com.au/repository/prisma-packages/twistlock"
+    - question_name: "Nexus username (optional)"
+      question_description: "Leave blank for anonymous-read repos."
+      variable: prisma_stage_nexus_username
+      type: text
+      required: false
+      default: ""
+    - question_name: "Nexus password (optional)"
+      question_description: >-
+        Basic-auth password. Masked at launch and never echoed in task output
+        (the get_url tasks in prisma_stage set no_log).
+      variable: prisma_stage_nexus_password
+      type: password
+      required: false
+      default: ""

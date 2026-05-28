@@ -1,14 +1,47 @@
 ---
 argument_specs:
   main:
-    short_description: "Stage the operator-supplied Prisma tarball, verify its SHA-256, and extract the installer."
+    short_description: "Stage the Prisma tarball (files/ or Nexus), verify its SHA-256, and extract the installer."
     options:
       prisma_install_dir:
         type: str
         description: "Directory where the tarball is staged and extracted."
       prisma_tarball_name:
         type: str
-        description: "Filename of the operator-supplied Prisma tarball under files/."
+        description: "Filename of the Prisma tarball — both the files/ src and the Nexus path use this name."
       prisma_extracted_dir:
         type: str
         description: "Path to the extracted installer directory (holds twistlock.sh)."
+      prisma_stage_source:
+        type: str
+        choices: [auto, files, nexus]
+        default: auto
+        description: >-
+          Where to fetch the tarball + SHA-256 from. 'auto' picks 'nexus' when
+          prisma_stage_nexus_url is set, otherwise 'files'.
+      prisma_stage_nexus_url:
+        type: str
+        default: ""
+        description: >-
+          Base URL of the Nexus directory holding the tarball (no trailing
+          slash), e.g. https://nexus.com.au/repository/prisma-packages/twistlock.
+          The role appends "/{{ prisma_tarball_name }}" and ".sha256".
+      prisma_stage_nexus_username:
+        type: str
+        default: ""
+        description: "Optional basic-auth username for Nexus. Leave blank for anonymous read."
+      prisma_stage_nexus_password:
+        type: str
+        default: ""
+        description: >-
+          Optional basic-auth password for Nexus. Treated as secret —
+          download tasks set no_log. Inject via AAP credential / survey /
+          -e @local-secrets.yml; never commit.
+      prisma_stage_nexus_validate_certs:
+        type: bool
+        default: true
+        description: "Verify the Nexus server TLS certificate. Disable only for self-signed lab repos."
+      prisma_stage_nexus_timeout:
+        type: int
+        default: 600
+        description: "get_url socket timeout in seconds for the tarball download (it's GB-scale)."

@@ -1,4 +1,16 @@
 ---
+# Tarball source is pluggable (see defaults/main.yml): files | nexus.
+# In an AAP execution environment there is no control-node files/ dir, so the
+# tarball is fetched from an internal Nexus repo. files/ stays the default for
+# local CLI dev and the molecule scenario.
+- name: Resolve the effective Prisma stage source
+  ansible.builtin.set_fact:
+    _prisma_stage_source: >-
+      {{ prisma_stage_source
+         if prisma_stage_source != 'auto'
+         else ('nexus' if (prisma_stage_nexus_url | default('') | length > 0)
+               else 'files') }}
+
 - name: Ensure install dir
   ansible.builtin.file:
     path: "{{ prisma_install_dir }}"
@@ -7,21 +19,58 @@
     group: root
     mode: "0750"
 
-- name: Stage Prisma tarball
+- name: Stage Prisma tarball from files/ (local dev + molecule)
   ansible.builtin.copy:
     src: "{{ prisma_tarball_name }}"
     dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}"
     owner: root
     group: root
     mode: "0600"
+  when: _prisma_stage_source == 'files'
 
-- name: Stage SHA-256 manifest
+- name: Stage SHA-256 manifest from files/ (local dev + molecule)
   ansible.builtin.copy:
     src: "{{ prisma_tarball_name }}.sha256"
     dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}.sha256"
     owner: root
     group: root
     mode: "0644"
+  when: _prisma_stage_source == 'files'
+
+# Nexus path: download the tarball and its .sha256 sidecar with the builtin
+# get_url module — no community.* collection required in the EE. Basic auth is
+# optional (Nexus repos may be anonymous-read on the internal network);
+# url_username/url_password are omit-ted when blank so unauth requests work.
+- name: Stage Prisma tarball + SHA-256 from Nexus
+  when: _prisma_stage_source == 'nexus'
+  block:
+    - name: Download Prisma tarball from Nexus
+      ansible.builtin.get_url:
+        url: "{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}"
+        dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}"
+        url_username: "{{ prisma_stage_nexus_username | default(omit, true) }}"
+        url_password: "{{ prisma_stage_nexus_password | default(omit, true) }}"
+        force_basic_auth: "{{ (prisma_stage_nexus_username | default('') | length) > 0 }}"
+        validate_certs: "{{ prisma_stage_nexus_validate_certs | bool }}"
+        timeout: "{{ prisma_stage_nexus_timeout | int }}"
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+
+    - name: Download SHA-256 manifest from Nexus
+      ansible.builtin.get_url:
+        url: "{{ prisma_stage_nexus_url }}/{{ prisma_tarball_name }}.sha256"
+        dest: "{{ prisma_install_dir }}/{{ prisma_tarball_name }}.sha256"
+        url_username: "{{ prisma_stage_nexus_username | default(omit, true) }}"
+        url_password: "{{ prisma_stage_nexus_password | default(omit, true) }}"
+        force_basic_auth: "{{ (prisma_stage_nexus_username | default('') | length) > 0 }}"
+        validate_certs: "{{ prisma_stage_nexus_validate_certs | bool }}"
+        timeout: 60
+        owner: root
+        group: root
+        mode: "0644"
+      no_log: true
 
 - name: Verify tarball integrity
   ansible.builtin.command: "sha256sum -c {{ prisma_tarball_name }}.sha256"

@@ -1,0 +1,13 @@
+---
+# Combined survey for the prisma-site job template. The site run wants both:
+#   - TLS material   (prisma_tls   content source) — see survey_stage_tls.yml
+#   - Nexus source   (prisma_stage nexus  source) — see survey_stage_nexus.yml
+# AAP Controller allows only one survey_spec per template, so we concatenate
+# the two spec lists here and reference {{ survey_stage_site }} on the
+# template. Reuses the wrapped survey vars verbatim — no field is duplicated.
+survey_stage_site:
+  name: "Console TLS + Nexus tarball source"
+  description: >-
+    Operator-supplied PEM cert/key/CA for the Console (prisma_tls) plus the
+    Nexus repo to download the Prisma installer tarball from (prisma_stage).
+  spec: "{{ survey_stage_tls.spec + survey_stage_nexus.spec }}"

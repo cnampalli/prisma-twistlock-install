@@ -1,0 +1,20 @@
+---
+# Where prisma_stage gets the Console installer tarball. Auto-detected unless
+# set explicitly:
+#   prisma_stage_nexus_url set -> nexus  (download from internal Nexus repo)
+#   otherwise                  -> files  (control-node files/ ; local dev + molecule)
+#
+# The nexus path mirrors the prisma_tls vault path: zero collection dependency
+# (uses ansible.builtin.get_url), inert until configured, and operator-driven
+# at job launch via AAP survey/credential or `-e` for local CLI runs.
+prisma_stage_source: "auto"            # auto | files | nexus
+
+# nexus source — base URL of the directory holding the tarball, e.g.
+# https://nexus.com.au/repository/prisma-packages/twistlock
+# The role appends "/{{ prisma_tarball_name }}" and
+# "/{{ prisma_tarball_name }}.sha256" to fetch the archive and its manifest.
+prisma_stage_nexus_url: ""
+prisma_stage_nexus_username: ""        # optional basic auth (HTTP 401 -> set this)
+prisma_stage_nexus_password: ""        # optional basic auth (no_log on fetch tasks)
+prisma_stage_nexus_validate_certs: true
+prisma_stage_nexus_timeout: 600        # seconds; tarball is multi-hundred-MB to GB-scale
