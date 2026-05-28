@@ -8,6 +8,17 @@
   changed_when: false
   failed_when: podman_rpm_check.rc == 0
 
+# RPM source is pluggable (see defaults/main.yml): files | nexus.
+# In an AAP execution environment there is no control-node files/ dir, so the
+# RPMs are fetched from an internal Nexus repo via EE-relay.
+- name: Resolve the effective docker stage source
+  ansible.builtin.set_fact:
+    _docker_stage_source: >-
+      {{ docker_stage_source
+         if docker_stage_source != 'auto'
+         else ('nexus' if (docker_stage_nexus_url | default('') | length > 0)
+               else 'files') }}
+
 - name: Ensure docker install dir
   ansible.builtin.file:
     path: "{{ docker_stage_dir }}"
@@ -16,20 +27,65 @@
     group: root
     mode: "0750"
 
-- name: Stage docker-ce RPMs and sha256 manifests
+- name: Stage docker-ce RPMs and sha256 manifests from files/ (local dev + molecule)
   ansible.builtin.copy:
     src: "{{ item }}"
     dest: "{{ docker_stage_dir }}/{{ item }}"
     owner: root
     group: root
-    mode: "0600"
-  loop:
-    - "{{ docker_engine_rpm }}"
-    - "{{ docker_cli_rpm }}"
-    - "{{ docker_containerd_rpm }}"
-    - "{{ docker_engine_rpm }}.sha256"
-    - "{{ docker_cli_rpm }}.sha256"
-    - "{{ docker_containerd_rpm }}.sha256"
+    mode: "{{ '0644' if item.endswith('.sha256') else '0600' }}"
+  loop: "{{ _docker_stage_artifacts }}"
+  when: _docker_stage_source == 'files'
+
+# Nexus path uses an EE-relay: download all 6 files (3 RPMs + 3 sha256
+# sidecars) on the controller / EE, then push each to the target VM. Without
+# the relay, get_url would run on the VM, which often lacks Nexus reachability
+# in a hardened air-gap topology.
+- name: Stage docker-ce RPMs + sha256 from Nexus (EE-relay)
+  when: _docker_stage_source == 'nexus'
+  block:
+    - name: Create a controller-side staging dir for the Nexus downloads
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: ".docker-stage"
+      register: _ee_tmp
+      delegate_to: localhost
+      become: false
+      changed_when: false
+
+    - name: Download docker-ce artifacts from Nexus onto the controller / EE
+      ansible.builtin.get_url:
+        url: "{{ docker_stage_nexus_url }}/{{ item }}"
+        dest: "{{ _ee_tmp.path }}/{{ item }}"
+        url_username: "{{ docker_stage_nexus_username | default(omit, true) }}"
+        url_password: "{{ docker_stage_nexus_password | default(omit, true) }}"
+        force_basic_auth: "{{ (docker_stage_nexus_username | default('') | length) > 0 }}"
+        validate_certs: "{{ docker_stage_nexus_validate_certs | bool }}"
+        timeout: "{{ docker_stage_nexus_timeout | int }}"
+        mode: "{{ '0644' if item.endswith('.sha256') else '0600' }}"
+      delegate_to: localhost
+      become: false
+      no_log: true
+      loop: "{{ _docker_stage_artifacts }}"
+
+    - name: Push docker-ce artifacts from controller to target VM
+      ansible.builtin.copy:
+        src: "{{ _ee_tmp.path }}/{{ item }}"
+        dest: "{{ docker_stage_dir }}/{{ item }}"
+        owner: root
+        group: root
+        mode: "{{ '0644' if item.endswith('.sha256') else '0600' }}"
+      loop: "{{ _docker_stage_artifacts }}"
+
+  always:
+    - name: Clean up the controller-side staging dir
+      ansible.builtin.file:
+        path: "{{ _ee_tmp.path }}"
+        state: absent
+      delegate_to: localhost
+      become: false
+      changed_when: false
+      when: _ee_tmp.path is defined
 
 - name: Verify RPM integrity
   ansible.builtin.command: "sha256sum -c {{ item }}.sha256"

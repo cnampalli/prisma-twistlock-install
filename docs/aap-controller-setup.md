@@ -291,31 +291,35 @@ extra_var rather than masked. `prisma_tls` writes it with `no_log`, but for a
 properly masked secret use the role's **Vault source** (`prisma_tls_vault_*`)
 instead. For a local CLI run, pass the same vars via `-e @certs.yml`.
 
-**B.9d — `prisma-site` Nexus tarball source.** Because the EE has no
-control-node `files/` dir, `prisma_stage` downloads the Prisma installer
-tarball from an internal Nexus repo. Add three more questions on the **same**
-`prisma-site (Phases 2-8)` survey (alongside the TLS questions in B.9c):
+**B.9d — `prisma-site` Nexus artifact source.** Because the EE has no
+control-node `files/` dir, every role that fetches artifacts (`prisma_stage`
+for the Console tarball, `docker_stage` for the docker-ce RPMs on
+scanner/sandbox, future) downloads from an internal Nexus repo. There is
+**one** Nexus server, **one** credential — each role only adds its own repo
+path. Add three more questions on the **same** `prisma-site (Phases 2-8)`
+survey (alongside the TLS questions in B.9c):
 
 | Prompt | Variable | Type | Default | Required |
 | --- | --- | --- | --- | --- |
-| Nexus base URL | `prisma_stage_nexus_url` | Text | `https://nexus.com.au/repository/prisma-packages/twistlock` | ✓ |
-| Nexus username (optional) | `prisma_stage_nexus_username` | Text | *(empty)* | — |
-| Nexus password (optional) | `prisma_stage_nexus_password` | **Password** | *(empty)* | — |
+| Nexus base URL | `nexus_base_url` | Text | `https://nexus.com.au` | ✓ |
+| Nexus username (optional) | `nexus_username` | Text | *(empty)* | — |
+| Nexus password (optional) | `nexus_password` | **Password** | *(empty)* | — |
 
-The role appends `/{{ prisma_tarball_name }}` and `.sha256` to the URL to fetch
-both files. The password field **is** masked (single-line, hidden in job
-output) — unlike the TLS textareas. Leave username/password blank for
-anonymous-read repos. For a local CLI run, pass the same vars via
-`-e prisma_stage_nexus_url=… -e @local-secrets.yml`.
+Each role appends its own repo path on top:
+`prisma_stage_nexus_path: /repository/prisma-packages/twistlock` (in
+`prisma_console.yml`); `docker_stage_nexus_path: /repository/docker-packages/rhel8`
+(in `prisma_scanner.yml`); and so on. The password field **is** masked
+(single-line, hidden in job output) — unlike the TLS textareas. Leave
+username/password blank for anonymous-read repos. For a local CLI run, pass
+the same vars via `-e nexus_base_url=… -e @local-secrets.yml`.
 
-> **If you took the optional §B.3 path:** omit the **Password** questions above
-> (`prisma_backup_token`, `prisma_restore_api_password`,
-> `prisma_stage_nexus_password`) and the
-> `internal_backup_url` / `prisma_restore_api_user` /
-> `prisma_stage_nexus_username` questions — those values come from the attached
-> credentials (`prisma-backup-prod`, `prisma-restore-api-prod`, and the new
-> `prisma-nexus-prod`) instead. Keep only the DR behaviour questions on
-> `prisma-40-dr-drill` and the Nexus URL on `prisma-site`.
+> **If you took the optional §B.3 path:** omit the three **Nexus** questions
+> above — `nexus_username` / `nexus_password` come from the attached
+> shared `Nexus` credential type, and `nexus_base_url` ships in
+> `group_vars/all.yml`. Same logic for backup / restore secrets:
+> `prisma_backup_token` / `prisma_restore_api_password` etc. come from their
+> respective credentials. Keep only the DR behaviour questions on
+> `prisma-40-dr-drill`.
 
 ### B.10 Object → as-code file mapping
 If you ever reconcile the UI against the repo:

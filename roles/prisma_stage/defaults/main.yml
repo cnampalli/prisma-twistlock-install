@@ -1,8 +1,8 @@
 ---
 # Where prisma_stage gets the Console installer tarball. Auto-detected unless
 # set explicitly:
-#   prisma_stage_nexus_url set -> nexus  (download from internal Nexus repo)
-#   otherwise                  -> files  (control-node files/ ; local dev + molecule)
+#   prisma_stage_nexus_path set -> nexus  (download from internal Nexus repo)
+#   otherwise                   -> files  (control-node files/; local dev + molecule)
 #
 # The nexus path uses an EE-relay: the download (get_url) runs on the
 # controller / execution environment via delegate_to: localhost, then the file
@@ -14,12 +14,22 @@
 # or `-e` for local CLI runs.
 prisma_stage_source: "auto"            # auto | files | nexus
 
-# nexus source — base URL of the directory holding the tarball, e.g.
-# https://nexus.com.au/repository/prisma-packages/twistlock
-# The role appends "/{{ prisma_tarball_name }}" and
-# "/{{ prisma_tarball_name }}.sha256" to fetch the archive and its manifest.
-prisma_stage_nexus_url: ""
-prisma_stage_nexus_username: ""        # optional basic auth (HTTP 401 -> set this)
-prisma_stage_nexus_password: ""        # optional basic auth (no_log on fetch tasks)
-prisma_stage_nexus_validate_certs: true
+# Repo path appended to {{ nexus_base_url }} (defined in group_vars/all.yml).
+# e.g. /repository/prisma-packages/twistlock
+# Trigger for auto-detection: setting this is what flips source to 'nexus'.
+prisma_stage_nexus_path: ""
+
+# Full URL — computed from base + path. Operators can override with a full URL
+# as an escape hatch if the artifact lives outside the base Nexus instance.
+prisma_stage_nexus_url: >-
+  {{ (nexus_base_url ~ prisma_stage_nexus_path)
+     if (prisma_stage_nexus_path | default('') | length > 0)
+     else '' }}
+
+# Credentials default to the shared nexus_username / nexus_password (see
+# group_vars/all.yml + AAP "Nexus" credential). Override per-role only if a
+# specific Nexus repo needs different creds; leave at the shared defaults.
+prisma_stage_nexus_username: "{{ nexus_username | default('') }}"
+prisma_stage_nexus_password: "{{ nexus_password | default('') }}"
+prisma_stage_nexus_validate_certs: "{{ nexus_validate_certs | default(true) }}"
 prisma_stage_nexus_timeout: 600        # seconds; tarball is multi-hundred-MB to GB-scale

@@ -1,7 +1,9 @@
 ---
 argument_specs:
   main:
-    short_description: "Install the pinned docker-ce RPM stack from operator files on scanner/sandbox hosts."
+    short_description: >-
+      Install the pinned docker-ce RPM stack on scanner/sandbox hosts.
+      Source: files/ or Nexus (EE-relay).
     options:
       docker_ce_version:
         type: str
@@ -14,13 +16,53 @@ argument_specs:
         description: "Pinned containerd.io version."
       docker_engine_rpm:
         type: str
-        description: "Filename of the docker-ce engine RPM staged under files/."
+        description: "Filename of the docker-ce engine RPM (used for both files/ src and Nexus path)."
       docker_cli_rpm:
         type: str
-        description: "Filename of the docker-ce-cli RPM staged under files/."
+        description: "Filename of the docker-ce-cli RPM."
       docker_containerd_rpm:
         type: str
-        description: "Filename of the containerd.io RPM staged under files/."
+        description: "Filename of the containerd.io RPM."
       docker_stage_dir:
         type: str
         description: "Staging directory on the target host for the docker RPMs."
+      docker_stage_source:
+        type: str
+        choices: [auto, files, nexus]
+        default: auto
+        description: >-
+          Where to fetch the RPMs + sha256 sidecars from. 'auto' picks 'nexus'
+          when docker_stage_nexus_path is set, otherwise 'files'.
+      docker_stage_nexus_path:
+        type: str
+        default: ""
+        description: >-
+          Repo path appended to {{ nexus_base_url }} (group_vars/all.yml),
+          e.g. /repository/docker-packages/rhel8. Setting this flips
+          docker_stage_source 'auto' to 'nexus'.
+      docker_stage_nexus_url:
+        type: str
+        default: ""
+        description: >-
+          Computed full URL (nexus_base_url + docker_stage_nexus_path). Can be
+          set directly as an escape hatch if the artifact lives outside the
+          base Nexus instance.
+      docker_stage_nexus_username:
+        type: str
+        default: ""
+        description: >-
+          Basic-auth username for Nexus. Defaults to shared nexus_username.
+      docker_stage_nexus_password:
+        type: str
+        default: ""
+        description: >-
+          Basic-auth password for Nexus. Defaults to shared nexus_password.
+          Treated as secret — download tasks set no_log.
+      docker_stage_nexus_validate_certs:
+        type: bool
+        default: true
+        description: "Verify Nexus TLS. Defaults to shared nexus_validate_certs."
+      docker_stage_nexus_timeout:
+        type: int
+        default: 300
+        description: "get_url socket timeout in seconds for each RPM download."

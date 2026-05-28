@@ -26,3 +26,13 @@ ansible_python_interpreter: auto_silent
 # key/Kerberos-only hosts.
 rhel_baseline_password_auth_exception: true
 rhel_baseline_password_auth_cidr: "10.0.0.0/8"
+
+# Internal Nexus artifact repository. ONE Nexus server, ONE credential —
+# each role appends its own repo path (prisma_stage_nexus_path,
+# docker_stage_nexus_path, etc.) onto nexus_base_url. nexus_username /
+# nexus_password are injected at job launch by the "Nexus" AAP credential
+# (controller/group_vars/all/controller_credential_types.yml) or the
+# survey_stage_nexus password field; for local CLI runs pass them via
+# -e @local-secrets.yml.
+nexus_base_url: "https://nexus.com.au"
+nexus_validate_certs: true
