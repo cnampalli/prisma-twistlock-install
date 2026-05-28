@@ -40,6 +40,23 @@
     - rsyslog
   tags: [services]
 
+# Guard: chrony.conf.j2 loops over ntp_servers with no fallback. An empty or
+# undefined list silently produces a conf with zero `server` lines — chronyd
+# starts, no error, but time never syncs (and Prisma needs Console<->Defender
+# clocks within 30s). Fail loud here instead. Defined for every Prisma host
+# class in inventories/<env>/group_vars/prisma_all.yml.
+- name: Assert ntp_servers is defined and non-empty
+  ansible.builtin.assert:
+    that:
+      - ntp_servers is defined
+      - ntp_servers | length > 0
+    fail_msg: >-
+      ntp_servers is empty or undefined for {{ inventory_hostname }}. Without
+      NTP peers chrony cannot sync and Prisma's 30s Console<->Defender time
+      contract will silently break. Define ntp_servers in group_vars
+      (prisma_all.yml is the canonical home — every host class inherits it).
+  tags: [ntp]
+
 - name: Render chrony.conf
   ansible.builtin.template:
     src: chrony.conf.j2

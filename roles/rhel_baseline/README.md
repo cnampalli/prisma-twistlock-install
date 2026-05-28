@@ -27,8 +27,14 @@ From `roles/rhel_baseline/defaults/main.yml`:
 | `rhel_baseline_password_auth_cidr` | `""` | Admin source network (CIDR) the password exception applies to, e.g. `10.0.0.0/8`. **Required** when the exception is enabled; scope it as tightly as you can. |
 | `rhel_baseline_password_auth_group` | `""` | Optional — further restrict the exception to a group (`Match … Group`). |
 
-Also consumes, from `group_vars/prisma_console.yml`: `prisma_https_port`,
-`prisma_comm_port`, `ntp_servers`.
+Also consumes:
+- From `group_vars/prisma_console.yml`: `prisma_https_port`, `prisma_comm_port`
+  (Console-only — drives the `rhel_baseline_firewall_ports` override).
+- From `group_vars/prisma_all.yml`: `ntp_servers` — **required, non-empty**.
+  Lives at the prisma_all scope so every host class (console, scanner,
+  sandbox) inherits the same NTP peers; the role asserts the list is
+  non-empty before rendering `/etc/chrony.conf` to prevent a silent
+  empty-server config that lets chronyd start without ever syncing.
 
 ## Dependencies
 
