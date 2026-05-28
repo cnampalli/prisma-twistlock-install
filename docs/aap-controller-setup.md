@@ -220,7 +220,7 @@ settings for **all** of them:
 | `prisma-00-baseline (Phases 2-4)` | `playbooks/00-baseline.yml` | — | — |
 | `prisma-10-podman (Phase 5)` | `playbooks/10-podman.yml` | — | — |
 | `prisma-11-docker (Phase 3b)` | `playbooks/11-docker.yml` | — | — |
-| `prisma-site (Phases 2-8)` | `playbooks/site.yml` | — | ✓ TLS material (B.9) |
+| `prisma-site (Phases 2-8)` | `playbooks/site.yml` | — | ✓ TLS material + Nexus tarball source (B.9c, B.9d) |
 | `prisma-30-ops (Phase 10)` | `playbooks/30-prisma-ops.yml` | — | ✓ backup secrets (B.9) |
 | `prisma-40-dr-drill` | `playbooks/40-dr-drill.yml` | — | ✓ DR + restore secrets (B.9) |
 
@@ -291,11 +291,31 @@ extra_var rather than masked. `prisma_tls` writes it with `no_log`, but for a
 properly masked secret use the role's **Vault source** (`prisma_tls_vault_*`)
 instead. For a local CLI run, pass the same vars via `-e @certs.yml`.
 
+**B.9d — `prisma-site` Nexus tarball source.** Because the EE has no
+control-node `files/` dir, `prisma_stage` downloads the Prisma installer
+tarball from an internal Nexus repo. Add three more questions on the **same**
+`prisma-site (Phases 2-8)` survey (alongside the TLS questions in B.9c):
+
+| Prompt | Variable | Type | Default | Required |
+| --- | --- | --- | --- | --- |
+| Nexus base URL | `prisma_stage_nexus_url` | Text | `https://nexus.com.au/repository/prisma-packages/twistlock` | ✓ |
+| Nexus username (optional) | `prisma_stage_nexus_username` | Text | *(empty)* | — |
+| Nexus password (optional) | `prisma_stage_nexus_password` | **Password** | *(empty)* | — |
+
+The role appends `/{{ prisma_tarball_name }}` and `.sha256` to the URL to fetch
+both files. The password field **is** masked (single-line, hidden in job
+output) — unlike the TLS textareas. Leave username/password blank for
+anonymous-read repos. For a local CLI run, pass the same vars via
+`-e prisma_stage_nexus_url=… -e @local-secrets.yml`.
+
 > **If you took the optional §B.3 path:** omit the **Password** questions above
-> (`prisma_backup_token`, `prisma_restore_api_password`) and the
-> `internal_backup_url` / `prisma_restore_api_user` questions — those values come
-> from the attached credentials instead. Keep only the DR behaviour questions on
-> `prisma-40-dr-drill`.
+> (`prisma_backup_token`, `prisma_restore_api_password`,
+> `prisma_stage_nexus_password`) and the
+> `internal_backup_url` / `prisma_restore_api_user` /
+> `prisma_stage_nexus_username` questions — those values come from the attached
+> credentials (`prisma-backup-prod`, `prisma-restore-api-prod`, and the new
+> `prisma-nexus-prod`) instead. Keep only the DR behaviour questions on
+> `prisma-40-dr-drill` and the Nexus URL on `prisma-site`.
 
 ### B.10 Object → as-code file mapping
 If you ever reconcile the UI against the repo:
@@ -311,6 +331,8 @@ If you ever reconcile the UI against the repo:
 | Job templates | `controller_job_templates.yml` |
 | Workflows | `controller_workflows.yml` |
 | TLS-material survey | `survey_stage_tls.yml` |
+| Nexus tarball-source survey | `survey_stage_nexus.yml` |
+| Combined site survey (TLS + Nexus) | `survey_stage_site.yml` |
 | Backup-secrets survey | `survey_ops_backup.yml` |
 | DR survey | `survey_dr_drill.yml` |
 

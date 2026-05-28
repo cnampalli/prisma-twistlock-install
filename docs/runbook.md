@@ -504,7 +504,16 @@ openssl verify -CAfile /etc/pki/prisma/ca-chain.crt /etc/pki/prisma/console.crt
 
 ### Phase 7 — Stage and extract the Prisma installer `[A/M]`
 
-**Objective:** land the (already-downloaded) Prisma tarball on the VM and extract it in a known location.
+**Objective:** land the Prisma tarball on the VM (from `files/` or Nexus) and extract it in a known location.
+
+**Source modes.** `prisma_stage` auto-detects where the tarball comes from:
+
+| Mode | Trigger | Used by |
+| --- | --- | --- |
+| `files` | `prisma_stage_nexus_url` is empty | Local CLI runs and the molecule scenario. Operator drops the tarball + `.sha256` into the play's `files/` search path. |
+| `nexus` | `prisma_stage_nexus_url` is set | AAP execution environments (no `files/` dir). The role downloads `<url>/<tarball>` and `<url>/<tarball>.sha256` via `ansible.builtin.get_url`. URL ships in `inventories/<env>/group_vars/prisma_console.yml`; basic-auth user/password come from the `Prisma Nexus` AAP credential (Path A, superuser) or the `survey_stage_nexus.yml` survey (default, no superuser). |
+
+Either way the role drops `prisma_cloud_compute_edition_<ver>.tar.gz` and its `.sha256` sidecar in `/opt/prisma-install/`, then runs the same verify + extract tail.
 
 **Automated**
 ```yaml
@@ -516,6 +525,7 @@ openssl verify -CAfile /etc/pki/prisma/ca-chain.crt /etc/pki/prisma/console.crt
     group: root
     mode: "0750"
 
+# files source (default for local CLI / molecule)
 - name: Copy Prisma tarball
   ansible.builtin.copy:
     src: prisma_cloud_compute_edition_34_01_126.tar.gz
@@ -523,6 +533,20 @@ openssl verify -CAfile /etc/pki/prisma/ca-chain.crt /etc/pki/prisma/console.crt
     owner: root
     group: root
     mode: "0600"
+  when: prisma_stage_nexus_url | default('') | length == 0
+
+# nexus source (AAP EE)
+- name: Download Prisma tarball from Nexus
+  ansible.builtin.get_url:
+    url: "{{ prisma_stage_nexus_url }}/prisma_cloud_compute_edition_34_01_126.tar.gz"
+    dest: /opt/prisma-install/prisma_cloud_compute_edition_34_01_126.tar.gz
+    url_username: "{{ prisma_stage_nexus_username | default(omit, true) }}"
+    url_password: "{{ prisma_stage_nexus_password | default(omit, true) }}"
+    force_basic_auth: "{{ (prisma_stage_nexus_username | default('') | length) > 0 }}"
+    timeout: 600
+    mode: "0600"
+  no_log: true
+  when: prisma_stage_nexus_url | default('') | length > 0
 
 - name: Verify SHA-256
   ansible.builtin.command: sha256sum -c prisma_cloud_compute_edition_34_01_126.tar.gz.sha256
@@ -548,9 +572,10 @@ ls images/ 2>/dev/null || true
 Record the **exact** field names used in the shipped `twistlock.cfg.example`. If any name differs from §12.1, update §12.1 in the controlled copy of this runbook before proceeding.
 
 **Acceptance criteria (Phase 7)**
-- SHA-256 matches the value recorded from the Palo Alto CSP when the tarball was originally downloaded.
+- SHA-256 matches the value recorded from the Palo Alto CSP when the tarball was originally downloaded (and the value Nexus serves alongside the artefact).
 - Installer directory contains `twistlock.sh` (executable), a config file, and an `images/` tarball (or equivalent bundled image).
 - Operator has recorded the shipped field names.
+- If running from Nexus: the `Download Prisma tarball from Nexus` task ran without leaking credentials in job output (verified by `no_log: true`).
 
 ---
 
