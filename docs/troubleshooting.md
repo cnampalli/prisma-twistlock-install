@@ -151,6 +151,170 @@ auth **only** from the admin network — the global `no` stays for everyone else
 
 ---
 
+## 5. Tarball extracts flat — `prisma_extracted_dir/twistlock.sh` not found
+
+**Symptom.** `prisma_stage` succeeds the unarchive step but the very next
+assertion or downstream task fails on a path under
+`/opt/prisma-install/prisma_cloud_compute_edition_<ver>/`. The operator's
+manual `cd $prisma_extracted_dir` also reports "No such file or directory",
+and `prisma_config` / `prisma_restore` later point at non-existent paths.
+
+**Root cause.** The Prisma Cloud Compute tarball extracts **flat** into the
+target dir — `twistlock.sh`, `twistlock.cfg*`, `linux/twistcli`, and
+`images/` all land directly under `/opt/prisma-install/`. The role originally
+defaulted `prisma_extracted_dir` to a `prisma_cloud_compute_edition_<ver>/`
+wrapper subdirectory that the tarball does **not** create.
+
+**Host fix.** None — once the default is corrected the role runs to
+completion. If you ran the role before the fix landed, no cleanup is needed;
+the flat-extracted files are already in the right place.
+
+**Prevention (merged, `61114c6`).** `prisma_extracted_dir` default in all
+three inventories' `prisma_console.yml` flipped from
+`{{ prisma_install_dir }}/prisma_cloud_compute_edition_{{ prisma_version }}`
+to `{{ prisma_install_dir }}`. A comment notes the assumption — operators on
+a future Prisma version that *does* ship with a wrapper dir can override per
+host. The three manual-install guides
+(`docs/manual-install/{console,image-scanner,sandbox}.md`) got the same
+correction in `687a0c2`.
+
+---
+
+## 6. `twistlock.sh` dies on `short-name "twistlock/private:console" did not resolve`
+
+**Symptom.** The manual Phase 9 `./twistlock.sh -s console` step prints:
+```
+Loaded image: localhost/twistlock/private:console_34_01_126
+Error: you must provide at least one name or id
+Error: short-name "twistlock/private:console" did not resolve to an alias and
+       no unqualified-search registries are defined in "/etc/containers/registries.conf"
+Failed to start twistlock data container
+```
+Note the tag in the error: **`console` with no `_34_01_126` suffix**.
+
+**Root cause.** Two compounding bugs:
+
+1. `twistlock.sh` composes image names as
+   `twistlock/private:console${DOCKER_TWISTLOCK_TAG}` (around line 1593 of
+   the shipped script). With `DOCKER_TWISTLOCK_TAG` undefined the suffix
+   collapses to empty, hence the bare `:console` in the error.
+2. Even with the tag, `twistlock/private:console_<ver>` is an unqualified
+   short name; the hardened `registries.conf` has
+   `unqualified-search-registries = []` and no `[aliases]` table, so podman
+   cannot resolve it to the loaded
+   `localhost/twistlock/private:console_<ver>` image.
+
+**Host fix.** Re-render the two affected files and re-run the installer:
+```bash
+ansible-playbook -i inventories/<env>/hosts.yml playbooks/site.yml --tags podman,config
+cd /opt/prisma-install && ./twistlock.sh -s console
+```
+
+**Prevention (merged, `5df6a61`).** Two coordinated edits:
+
+- `roles/prisma_config/templates/twistlock.cfg.j2` adds
+  `DOCKER_TWISTLOCK_TAG=_{{ prisma_version }}` so the tag is sourced correctly.
+- `roles/podman_config/templates/registries.conf.j2` adds a narrow
+  `[aliases]` table mapping `twistlock/private` to
+  `localhost/twistlock/private` — per-image specific, does **not** loosen
+  short-name resolution for any other repo. (Setting
+  `unqualified-search-registries = ["localhost"]` instead would have
+  weakened the hardening for everything; the alias is the narrower fix.)
+
+---
+
+## 7. `twistlock.sh` dies on `Bad label option ""` — and the wider missing-cfg-field class
+
+**Symptom.** After the short-name fix (#6 above), `./twistlock.sh -s console`
+gets further but dies with:
+```
+Error: Creating container storage: Bad label option "", valid options 'disable' or
+       'user, role, level, type, filetype' followed by ':' and a value.
+Failed to start Twistlock data container
+```
+Or with slightly different wording every time the installer reaches a new
+step that needs a cfg field our render didn't include.
+
+**Root cause.** The original `prisma_config/templates/twistlock.cfg.j2`
+re-authored `twistlock.cfg` from scratch with 9 fields. The shipped
+`twistlock.cfg.original` defines ~25 fields, and `twistlock.sh` sources them
+all. Every time the installer touched a field we hadn't rendered, the value
+was empty and the install died:
+
+- `DOCKER_TWISTLOCK_TAG` missing → short-name resolution failure (#6).
+- `SELINUX_LABEL=disable` missing → `--security-opt label=` (empty value) →
+  "Bad label option" above.
+- `READ_ONLY_FS`, `DATA_RECOVERY_ENABLED`, `CLEAN_STALE_NAMESPACES`,
+  `DISABLE_CONSOLE_CGROUP_LIMITS`, `RUN_CONSOLE_AS_ROOT`, `DEFENDER_CN`,
+  `CONSOLE_CN`, etc. were all queued up to bite next.
+
+**Host fix.** Re-render the cfg and re-run the installer:
+```bash
+ansible-playbook -i inventories/<env>/hosts.yml playbooks/site.yml --tags config
+cd /opt/prisma-install && ./twistlock.sh -s console
+```
+
+**Prevention (merged, `60ee440`).** `prisma_config` no longer authors the cfg.
+The role now:
+
+1. Asserts `prisma_stage` extracted the shipped `twistlock.cfg`.
+2. Preserves it as `twistlock.cfg.orig` on first run (source of truth for
+   the overlay; `force: false`).
+3. Re-seeds `twistlock.cfg` from `.orig` every run (deterministic baseline).
+4. Overlays just the 10 fields listed in `prisma_config_overrides` via
+   `lineinfile`.
+
+Every other field inherits its shipped default — including
+`SELINUX_LABEL=disable` and the nine that hadn't bitten yet. Operators
+extend `prisma_config_overrides` in `group_vars/prisma_console.yml` to add
+more overrides without patching the role.
+
+**Lesson.** Two failures of the same shape ("missing cfg field" → install
+dies) is a *Phase-4.5 architecture signal* per the systematic-debugging
+discipline, not "fix the next field individually." A diff-based render
+(`shipped + overlay`) self-corrects against new fields in future Prisma
+versions.
+
+---
+
+## 8. EE has Nexus reachability but the target VM does not — `get_url` hangs/refuses
+
+**Symptom.** `prisma_stage` running from an AAP execution environment with
+the Nexus source path fails the tarball download with a connection /
+timeout / "name or service not known" error, even though `curl -I <nexus>`
+from the EE itself works fine. The failure traceback points at a task
+running **on the target host**.
+
+**Root cause.** By default `ansible.builtin.get_url` (and friends) run **on
+the target host**, not the controller. In hardened topologies where the AAP
+execution environment has Nexus reachability but the target VM sits in a
+no-egress subnet, the download attempt happens from the wrong side of the
+network boundary.
+
+**Host fix.** None — the fix is in the role, not on the host. (Opening
+VM → Nexus connectivity to "work around" it usually breaks the air-gap
+posture the topology is enforcing.)
+
+**Prevention (merged, `beb0655`).** `prisma_stage` Nexus block refactored
+into an **EE-relay**:
+
+1. `ansible.builtin.tempfile` creates a controller-side staging dir
+   (`delegate_to: localhost`).
+2. `ansible.builtin.get_url` downloads the tarball + `.sha256` onto the EE
+   (`delegate_to: localhost`, `no_log: true`).
+3. `ansible.builtin.copy` pushes both artifacts from controller → VM over
+   SSH (default delegation — runs on the VM, reading the source from the
+   controller).
+4. `always: file state=absent` cleans up the controller-side staging dir
+   even on failure.
+
+The same pattern lands on `docker_stage` in PR #4 (Nexus consolidation).
+**Operator implication:** Nexus must be reachable from the controller / EE,
+**not** from the target VM. Verify with `curl -I <nexus-url>` from **inside
+the execution environment**, not from the install target.
+
+---
+
 ## Supporting changes made in the same effort
 
 - **Inventory** — removed placeholder `ansible_host` IPs from all
@@ -176,3 +340,9 @@ auth **only** from the admin network — the global `no` stays for everyone else
 | Effective sshd setting for a context | `sshd -T -C user=<u>,addr=<ip>` |
 | Confirm FIPS is active | `cat /proc/sys/crypto/fips_enabled` (1) + `update-crypto-policies --show` (FIPS) |
 | Is a path a mount? | `findmnt <path>` |
+| Confirm `DOCKER_TWISTLOCK_TAG` is in the rendered cfg | `grep DOCKER_TWISTLOCK_TAG /opt/prisma-install/twistlock.cfg` |
+| Diff overlaid cfg vs shipped original | `diff /opt/prisma-install/twistlock.cfg.orig /opt/prisma-install/twistlock.cfg` |
+| Confirm registries.conf has the twistlock alias | `grep -A1 '^\[aliases\]' /etc/containers/registries.conf` |
+| List images podman has loaded | `podman images --format '{{.Repository}}:{{.Tag}}'` |
+| Run twistlock.sh with bash tracing | `bash -x /opt/prisma-install/twistlock.sh -s console 2>&1 \| tail -60` |
+| Test Nexus reachability from the EE (not the VM) | `curl -ksSI {{ nexus_base_url }}` run **inside** the execution environment |
