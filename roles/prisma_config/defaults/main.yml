@@ -1,0 +1,35 @@
+---
+# twistlock.cfg overlay strategy
+# ------------------------------
+# prisma_config seeds twistlock.cfg from the shipped twistlock.cfg.orig (which
+# prisma_stage extracted alongside the installer) and then overlays only the
+# fields listed below via lineinfile. Every other field the installer expects
+# to source (SELINUX_LABEL=disable, READ_ONLY_FS=true, DATA_RECOVERY_*,
+# CLEAN_STALE_NAMESPACES, RUN_CONSOLE_AS_ROOT, DISABLE_CONSOLE_CGROUP_LIMITS,
+# DEFENDER_CN, CONSOLE_CN, etc.) inherits the shipped default.
+#
+# To override an extra field, append to this dict in
+# inventories/<env>/group_vars/prisma_console.yml — do NOT remove entries from
+# the role default. Each key becomes a lineinfile rule (regexp ^KEY=,
+# line KEY=value), so any value coercion (bool->lower-string, ports->int)
+# must happen here.
+prisma_config_overrides:
+  # Image-tag suffix the installer composes onto bundled image names
+  # (twistlock/private:console${DOCKER_TWISTLOCK_TAG}). MUST match the
+  # version embedded in the loaded image tags or twistlock.sh tries to run
+  # an empty/short-name tag.
+  DOCKER_TWISTLOCK_TAG: "_{{ prisma_version }}"
+
+  # Air-gap baseline: FIPS, persistent data, network ports, custom TLS.
+  FIPS_ENABLED: "{{ prisma_fips_enabled | string | lower }}"
+  DATA_FOLDER: "{{ prisma_data_folder }}"
+  MANAGEMENT_PORT_HTTPS: "{{ prisma_https_port | string }}"
+  COMMUNICATION_PORT: "{{ prisma_comm_port | string }}"
+  CUSTOM_CERT: "{{ prisma_custom_cert | string | lower }}"
+  CUSTOM_CERT_PATH: "{{ prisma_cert_path }}"
+  CUSTOM_CERT_KEY_PATH: "{{ prisma_cert_key_path }}"
+  CUSTOM_CERT_CA_PATH: "{{ prisma_cert_ca_path }}"
+
+  # Backup volume — match the NFS mount prisma_backup writes to so the
+  # in-Console DR backup target and the on-disk volume agree.
+  DATA_RECOVERY_VOLUME: "{{ prisma_backup_dir }}"
