@@ -204,11 +204,9 @@ install -m 0644 /root/prisma/prisma_cloud_compute_edition_34_01_126.tar.gz.sha25
 
 cd /opt/prisma-install
 sha256sum -c prisma_cloud_compute_edition_34_01_126.tar.gz.sha256
-tar -xzf prisma_cloud_compute_edition_34_01_126.tar.gz
+tar -xzf prisma_cloud_compute_edition_34_01_126.tar.gz   # extracts flat into /opt/prisma-install/
 
-install -m 0755 \
-  prisma_cloud_compute_edition_34_01_126/linux/twistcli \
-  /usr/local/bin/twistcli
+install -m 0755 linux/twistcli /usr/local/bin/twistcli
 
 twistcli --version                    # 34.01.126
 ```
