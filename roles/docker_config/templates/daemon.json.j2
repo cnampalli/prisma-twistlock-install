@@ -1,11 +1,17 @@
 {
-  "_comment": "Managed by Ansible — prisma-twistlock-install / docker_config",
   "storage-driver": "{{ docker_storage_driver }}",
   "log-driver": "{{ docker_log_driver }}",
+{# max-size / max-file are json-file driver opts and ARE REJECTED by journald
+   (docker exits 1 with "unknown log opt 'max-size' for journald log driver").
+   journald handles its own rotation via /etc/systemd/journald.conf, which
+   rhel_baseline already caps via rhel_baseline_journald_max_use. Emit log-opts
+   only when an operator opts back into json-file driver. -#}
+{% if docker_log_driver == 'json-file' %}
   "log-opts": {
     "max-size": "{{ docker_log_size_max }}",
     "max-file": "{{ docker_log_max_file | string }}"
   },
+{% endif %}
   "live-restore": {{ docker_live_restore | bool | to_json }},
   "exec-opts": ["native.cgroupdriver=systemd"],
   "default-ulimits": {

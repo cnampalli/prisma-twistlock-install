@@ -426,6 +426,122 @@ the asserts. Worth a code-search for the pattern across other roles
 
 ---
 
+## 11. `dockerd` crashes on startup: `unable to configure ... directives don't match any configuration option: _comment`
+
+**Symptom.** `systemctl restart docker` exits non-zero, journalctl shows:
+```
+dockerd[16237]: unable to configure the Docker daemon with file
+/etc/docker/daemon.json: the following directives don't match any
+configuration option: _comment
+docker.service: Main process exited, code=exited, status=1/FAILURE
+docker.service: Failed with result 'exit-code'.
+docker.service: Start request repeated too quickly.
+```
+The daemon never finishes initializing. `docker info`, `docker ps`, etc.
+all fail because there's no daemon to talk to. This surfaces the *first*
+time docker actually tries to **read** the role-rendered daemon.json —
+either after `meta: flush_handlers` (post-fix #10), or after a manual
+`systemctl restart docker`, or on a host where the role-rendered config
+landed before docker was first started.
+
+**Root cause.** Docker's daemon.json parser is **strict**: it errors on
+any unrecognized key, even ones prefixed with `_` (the Linux convention
+for "ignore me, I'm a comment"). The `roles/docker_config/templates/daemon.json.j2`
+template carried a leading `"_comment": "Managed by Ansible …"` line as
+a poor-man's comment (JSON has no native comments). Docker rejects it and
+exits 1.
+
+This bug was hidden behind issue #10 (handler-ordering): docker was never
+restarted, so it never read the file. The instant the daemon actually
+loaded daemon.json — whether by the new `meta: flush_handlers` step or
+by an operator manually restarting — it crash-looped. Two-bug latency
+chain: the fix for #10 surfaces #11.
+
+**Host fix.** Edit `/etc/docker/daemon.json`, delete the `"_comment": "..."`
+line (and the trailing comma if your file places it before another key),
+then:
+```bash
+sudo systemctl start docker
+sudo docker info --format '{{.CgroupDriver}}'   # expect: systemd
+```
+
+**Prevention (merged).** `_comment` removed from `daemon.json.j2`. The
+file's provenance is captured by:
+- The role's git history (`git log roles/docker_config/templates/daemon.json.j2`).
+- The file's mtime + 0644 root:root ownership.
+- The fact that `docker_config` is the only thing in the codebase that
+  writes `/etc/docker/daemon.json`.
+
+If you genuinely need an "Ansible managed" marker in the rendered file,
+write it to a sidecar (e.g. `/etc/docker/.daemon.json.managed`) instead
+of into the JSON itself. Don't add unknown keys to daemon.json.
+
+**Lesson.** When emitting structured config files (JSON, TOML, etc.),
+verify the parser's tolerance for unknown keys before adding any
+"marker" fields. JSON has no comment syntax; convention is to put
+provenance metadata in a sidecar file or in surrounding documentation,
+not in the data file itself. Audit other templates that render strict
+formats (`registries.conf` — TOML allows comments, `chrony.conf` — `#`
+comments work, `daemon.json` — **no comments**) for the same trap.
+
+---
+
+## 12. `dockerd` crashes on startup: `unknown log opt 'max-size' for journald log driver`
+
+**Symptom.** After issues #10 and #11 are resolved (handlers flush, `_comment`
+removed), docker still fails to start with:
+```
+failed to start daemon: failed to set log opts: failed to set log opts:
+unknown log opt 'max-size' for journald log driver
+docker.service: Main process exited, code=exited, status=1/FAILURE
+```
+Also visible in the journal (not a failure, just noise — disregard):
+```
+level=info msg="CDI directory does not exist, skipping: ... dir=/etc/cdi"
+level=info msg="CDI directory does not exist, skipping: ... dir=/var/run/cdi"
+```
+The CDI lines are informational (optional GPU/device passthrough). The
+`unknown log opt` line is fatal.
+
+**Root cause.** `max-size` / `max-file` are **`json-file`** log driver options
+— they are **NOT valid** for the **`journald`** log driver. The
+`daemon.json.j2` template was emitting them unconditionally alongside
+`"log-driver": "journald"`. Journald handles its own rotation via
+`/etc/systemd/journald.conf` (the `SystemMaxUse=` cap, which `rhel_baseline`
+already manages via `rhel_baseline_journald_max_use: 2G`); docker doesn't
+expose those knobs.
+
+**Host fix.** Edit `/etc/docker/daemon.json`, delete the entire `"log-opts": { … }`
+block (and its trailing comma if needed), then:
+```bash
+sudo systemctl start docker
+sudo journalctl -u docker --since "2 min ago" --no-pager | tail -5
+# expect: docker.service: Started successfully ...
+```
+
+**Prevention (merged).** `daemon.json.j2` now wraps the `log-opts` block in
+`{% if docker_log_driver == 'json-file' %} … {% endif %}`. With the default
+`journald` driver the block disappears entirely; if an operator overrides
+`docker_log_driver: json-file`, log-opts come back. Backward-compatible at
+the var layer — `docker_log_size_max` / `docker_log_max_file` defaults stay
+defined for the json-file case.
+
+**Lesson — three bugs in one role, one architectural cause.** This is the
+**third** docker_config bug in the same install: #10 (handlers not flushed),
+#11 (`_comment` rejected), #12 (log-opts/driver mismatch). All three share
+a root: the role's smoke test only runs `docker info` **after** the daemon
+has been restarted with our config — so any config that docker REJECTS at
+startup turns into "daemon crash loop with no specific assertion." A role
+that emits strict-parser config files (JSON, TOML, INI) should ideally
+validate the rendered file BEFORE killing the running service — e.g.
+`dockerd --validate /etc/docker/daemon.json` or equivalent — so a bad
+template fails the playbook with a clear "this option is invalid" message
+rather than a generic `status=1/FAILURE`. Worth a follow-up across other
+strict-format renders (`registries.conf` is TOML — tolerates comments;
+`chrony.conf` accepts `#`; **`daemon.json` has no tolerance at all**).
+
+---
+
 ## Supporting changes made in the same effort
 
 - **Inventory** — removed placeholder `ansible_host` IPs from all
