@@ -19,28 +19,41 @@ argument_specs:
         description: >-
           Where to fetch the tarball + SHA-256 from. 'auto' picks 'nexus' when
           prisma_stage_nexus_url is set, otherwise 'files'.
+      prisma_stage_nexus_path:
+        type: str
+        default: ""
+        description: >-
+          Repo path appended to {{ nexus_base_url }} (group_vars/all.yml),
+          e.g. /repository/prisma-packages/twistlock. Setting this flips
+          prisma_stage_source 'auto' to 'nexus'.
       prisma_stage_nexus_url:
         type: str
         default: ""
         description: >-
-          Base URL of the Nexus directory holding the tarball (no trailing
-          slash), e.g. https://nexus.com.au/repository/prisma-packages/twistlock.
-          The role appends "/{{ prisma_tarball_name }}" and ".sha256".
+          Computed full URL (nexus_base_url + prisma_stage_nexus_path). Can be
+          set directly as an escape hatch if the artifact lives outside the
+          base Nexus instance. The role appends "/{{ prisma_tarball_name }}"
+          and ".sha256" at fetch time.
       prisma_stage_nexus_username:
         type: str
         default: ""
-        description: "Optional basic-auth username for Nexus. Leave blank for anonymous read."
+        description: >-
+          Basic-auth username for Nexus. Defaults to the shared
+          nexus_username (group_vars/all.yml + AAP "Nexus" credential).
+          Override per-role only for a Nexus repo with different creds.
       prisma_stage_nexus_password:
         type: str
         default: ""
         description: >-
-          Optional basic-auth password for Nexus. Treated as secret —
-          download tasks set no_log. Inject via AAP credential / survey /
-          -e @local-secrets.yml; never commit.
+          Basic-auth password for Nexus. Defaults to the shared
+          nexus_password. Treated as secret — download tasks set no_log.
+          Never commit; inject via AAP credential / survey / -e @local-secrets.yml.
       prisma_stage_nexus_validate_certs:
         type: bool
         default: true
-        description: "Verify the Nexus server TLS certificate. Disable only for self-signed lab repos."
+        description: >-
+          Verify the Nexus server TLS certificate. Defaults to the shared
+          nexus_validate_certs. Disable only for self-signed lab repos.
       prisma_stage_nexus_timeout:
         type: int
         default: 600

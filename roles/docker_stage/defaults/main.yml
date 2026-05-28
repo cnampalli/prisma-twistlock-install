@@ -1,7 +1,7 @@
 ---
-# Pinned docker-ce stack, operator-staged under files/ of the play (same
-# pattern as prisma_stage). Filenames match upstream RHEL 8 naming for the
-# pinned versions; bump deliberately and re-verify in molecule/full.
+# Pinned docker-ce stack, operator-staged. Bump deliberately and re-verify in
+# molecule/full. Filenames match upstream RHEL 8 naming for the pinned
+# versions.
 
 docker_ce_version: "28.3.3"
 docker_cli_version: "28.3.3"
@@ -14,3 +14,43 @@ docker_containerd_rpm: "containerd.io-{{ docker_containerd_version }}-1.el8.x86_
 # Staging directory on the target host. Mirrors prisma_install_dir for
 # locality and easy manual inspection by operators.
 docker_stage_dir: "/opt/docker-install"
+
+# Pluggable source — mirrors prisma_stage. Auto-detected unless set explicitly:
+#   docker_stage_nexus_path set -> nexus  (download from internal Nexus repo)
+#   otherwise                   -> files  (control-node files/; local dev + molecule)
+#
+# The nexus path uses an EE-relay: the download (get_url) runs on the
+# controller / execution environment via delegate_to: localhost, then each
+# RPM + sha256 is pushed to the target VM with copy. Handles the topology
+# where the EE has Nexus reachability but the scanner/sandbox VMs do not.
+docker_stage_source: "auto"            # auto | files | nexus
+
+# Repo path appended to {{ nexus_base_url }} (defined in group_vars/all.yml).
+# e.g. /repository/docker-packages/rhel8
+# Trigger for auto-detection: setting this is what flips source to 'nexus'.
+docker_stage_nexus_path: ""
+
+# Full URL — computed from base + path. Operators can override with a full URL
+# as an escape hatch if the artifact lives outside the base Nexus instance.
+docker_stage_nexus_url: >-
+  {{ (nexus_base_url ~ docker_stage_nexus_path)
+     if (docker_stage_nexus_path | default('') | length > 0)
+     else '' }}
+
+# Credentials default to the shared nexus_username / nexus_password (see
+# group_vars/all.yml + AAP "Nexus" credential). Override per-role only if a
+# specific Nexus repo needs different creds.
+docker_stage_nexus_username: "{{ nexus_username | default('') }}"
+docker_stage_nexus_password: "{{ nexus_password | default('') }}"
+docker_stage_nexus_validate_certs: "{{ nexus_validate_certs | default(true) }}"
+docker_stage_nexus_timeout: 300        # seconds; RPMs are tens of MB
+
+# Internal computed list — the 3 RPMs + their .sha256 sidecars, used by both
+# files and nexus source paths via loop. Don't override.
+_docker_stage_artifacts:
+  - "{{ docker_engine_rpm }}"
+  - "{{ docker_cli_rpm }}"
+  - "{{ docker_containerd_rpm }}"
+  - "{{ docker_engine_rpm }}.sha256"
+  - "{{ docker_cli_rpm }}.sha256"
+  - "{{ docker_containerd_rpm }}.sha256"

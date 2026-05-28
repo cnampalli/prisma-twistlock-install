@@ -12,11 +12,12 @@ prisma_install_dir: "/opt/prisma-install"        # where the tarball is staged a
 # if a future Prisma version ships with a wrapper subdirectory.
 prisma_extracted_dir: "{{ prisma_install_dir }}"
 prisma_data_folder: "/var/lib/twistlock"         # bind-mount for the Console's persistent data
-# Tarball source — setting prisma_stage_nexus_url switches prisma_stage from
-# files/ (control-node) to nexus (downloaded via get_url). Username/password
-# come from the AAP `Prisma Nexus` credential or the survey_stage_nexus
-# password field; for local CLI runs pass them via -e @local-secrets.yml.
-prisma_stage_nexus_url: "https://nexus.com.au/repository/prisma-packages/twistlock"
+# Tarball source — setting prisma_stage_nexus_path switches prisma_stage from
+# files/ (control-node) to nexus (downloaded via get_url, EE-relay).
+# Combines with {{ nexus_base_url }} (group_vars/all.yml) to form the full
+# download URL. Credentials come from the shared AAP "Nexus" credential or
+# survey_stage_nexus; for local CLI runs pass them via -e @local-secrets.yml.
+prisma_stage_nexus_path: "/repository/prisma-packages/twistlock"
 
 # Network ports — Console UI/API and Defender inbound comms respectively.
 prisma_https_port: 8083
